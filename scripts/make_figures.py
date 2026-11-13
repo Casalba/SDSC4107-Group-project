@@ -1,0 +1,248 @@
+"""E1 的三张图（论文 Fig 2/3/4）：损失直方图、delta 面、recurrent vs simpler。
+
+用法：python -m scripts.make_figures [--exp e1] [--figs 2 3 4]
+输出：figures/fig02_loss_hist.png, fig03_delta_surface.png, fig04_recurrent_vs_simpler.png
+依赖：results/e1/<seed>/{metrics.json,pnl.npz,config.yaml}（train.py 产出）。
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import matplotlib
+import numpy as np
+import torch
+from src.common.metrics import cvar
+from src.replication.benchmark import HestonBenchmark
+from src.replication.e1 import market_from_cfg, policy_from_cfg
+from src.replication.env_heston import HestonWorld
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+FIG = Path("figures")
+PAPER_P0 = 1.94  # 论文 E1 的 p0（α=0.5）
+PAPER_P0_99 = 3.49
+
+
+def _load(exp: str) -> tuple[list[int], list[dict]]:
+    root = Path("results") / exp
+    seeds = sorted(int(p.name) for p in root.iterdir() if p.is_dir() and p.name.isdigit())
+    metrics = [
+        json.loads((root / str(s) / "metrics.json").read_text(encoding="utf-8")) for s in seeds
+    ]
+    return seeds, metrics
+
+
+def _losses(exp: str, seeds: list[int], key: str = "terminal_loss") -> np.ndarray:
+    out = []
+    for s in seeds:
+        with np.load(Path("results") / exp / str(s) / "pnl.npz") as data:
+            if key in data:
+                out.append(data[key])
+    return np.concatenate(out) if out else np.array([])
+
+
+def fig02(exp: str = "e1") -> Path:
+    seeds, metrics = _load(exp)
+    loss = _losses(exp, seeds)
+    bench = _losses(exp, seeds, "terminal_loss_benchmark")
+    price = float(np.mean([m["metrics"]["price"] for m in metrics]))
+    bench_price = float(np.mean([m["metrics"]["benchmark_price"] for m in metrics]))
+
+    fig, ax = plt.subplots(figsize=(8.0, 5.0))
+    bins = np.linspace(min(loss.min(), bench.min()), np.percentile(loss, 99.8), 120)
+    ax.hist(
+        loss,
+        bins=bins,
+        density=True,
+        alpha=0.55,
+        label=f"deep hedge (p0={price:.2f})",
+        color="#1f77b4",
+    )
+    ax.hist(
+        bench,
+        bins=bins,
+        density=True,
+        alpha=0.45,
+        label=f"Heston delta hedge (p0={bench_price:.2f})",
+        color="#ff7f0e",
+    )
+    ax.axvline(cvar(loss, 0.5), color="#1f77b4", ls="--", lw=1.2)
+    ax.axvline(cvar(bench, 0.5), color="#ff7f0e", ls="--", lw=1.2)
+    ax.axvline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper p0={PAPER_P0}")
+    ax.set_xlabel("terminal hedging loss  $L$  (units of \\$)")
+    ax.set_ylabel("density")
+    ax.set_title(f"E1 loss distribution, Heston d=2, avg-CVaR(0.5), {len(seeds)} seeds")
+    ax.legend(frameon=False, fontsize=9)
+    ax.text(
+        0.99,
+        0.72,
+        "dashed = CVaR_50 (the price)",
+        transform=ax.transAxes,
+        ha="right",
+        fontsize=8,
+        color="0.35",
+    )
+    fig.text(
+        0.01,
+        0.01,
+        f"Fig 2 replication: the trained network prices the option at {price:.2f} vs paper {PAPER_P0}.",
+        fontsize=8,
+        color="0.25",
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    out = FIG / "fig02_loss_hist.png"
+    fig.savefig(out, dpi=300)
+    plt.close(fig)
+    return out
+
+
+def _ensemble_positions(
+    exp: str, seeds: list[int], n_paths: int = 100_000
+) -> dict[str, np.ndarray]:
+    """在固定评估路径上跑全部 seed，返回平均仓位（网络）与 model delta。"""
+    cfg = __import__("yaml").safe_load(
+        (Path("results") / exp / str(seeds[0]) / "config.yaml").read_text(encoding="utf-8")
+    )
+    market = market_from_cfg(cfg)
+    world = HestonWorld(market, device=torch.device("cpu"))
+    torch.manual_seed(424242)
+    paths = world.simulate(n_paths)
+    feats = world.features(paths)
+    acc = np.zeros((n_paths, market.n_steps, market.d))
+    for s in seeds:
+        policy = policy_from_cfg(cfg, market.n_features, market.d, torch.device("cpu"))
+        state = torch.load(
+            Path("results") / exp / str(s) / "policy.pt", map_location="cpu", weights_only=True
+        )
+        policy.load_state_dict(state)
+        policy.eval()
+        with torch.no_grad():
+            pos = policy.forward_path(feats).numpy()
+        acc += pos
+    policy_pos = acc / len(seeds)
+    bench = HestonBenchmark(world)
+    bench_pos = bench.positions(paths).numpy()
+    return {
+        "policy": policy_pos,
+        "benchmark": bench_pos,
+        "spot": paths.spot.numpy(),
+        "var": paths.variance.numpy(),
+    }
+
+
+def fig03(exp: str = "e1", k: int = 15) -> Path:
+    seeds, _ = _load(exp)
+    data = _ensemble_positions(exp, seeds)
+    spot, var = data["spot"], data["var"]
+    s_lo, s_hi, v_lo, v_hi = 88.0, 112.0, 0.005, 0.10
+    s_edges = np.linspace(s_lo, s_hi, 25)
+    v_edges = np.linspace(v_lo, v_hi, 19)
+    mask = (spot[:, k] >= s_lo) & (spot[:, k] <= s_hi) & (var[:, k] >= v_lo) & (var[:, k] <= v_hi)
+    print(f"[fig03] {mask.sum()} / {len(mask)} paths in the (S,v) window at k={k}")
+
+    def binned(values: np.ndarray) -> np.ndarray:
+        num, _, _ = np.histogram2d(
+            spot[mask, k], var[mask, k], bins=(s_edges, v_edges), weights=values[mask]
+        )
+        cnt, _, _ = np.histogram2d(spot[mask, k], var[mask, k], bins=(s_edges, v_edges))
+        with np.errstate(invalid="ignore", divide="ignore"):
+            out = num / cnt
+        out[cnt < 20] = np.nan
+        return out.T
+
+    panels = [
+        ("policy $\\delta_1$", binned(data["policy"][:, k, 0]), "RdBu_r"),
+        ("model $\\delta_1$", binned(data["benchmark"][:, k, 0]), "RdBu_r"),
+        ("policy $\\delta_2$", binned(data["policy"][:, k, 1]), "RdBu_r"),
+        ("model $\\delta_2$", binned(data["benchmark"][:, k, 1]), "RdBu_r"),
+    ]
+    d1_rmse = float(np.sqrt(np.nanmean((panels[0][1] - panels[1][1]) ** 2)))
+    d2_rmse = float(np.sqrt(np.nanmean((panels[2][1] - panels[3][1]) ** 2)))
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.0, 7.2), sharex=True, sharey=True)
+    for ax, (title, grid, cmap) in zip(axes.ravel(), panels, strict=True):
+        mesh = ax.pcolormesh(s_edges, v_edges, grid, cmap=cmap, shading="auto")
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel("spot $S_{15}$")
+        ax.set_ylabel("variance $v_{15}$")
+        fig.colorbar(mesh, ax=ax, fraction=0.046, pad=0.03)
+    fig.suptitle(
+        f"E1 delta surface at $t=15$d (network mean of {len(seeds)} seeds vs Heston model)"
+    )
+    fig.text(
+        0.01,
+        0.01,
+        f"Fig 3 replication: RMSE $\\delta_1$={d1_rmse:.3f}, $\\delta_2$={d2_rmse:.3f} on the (S,v) window.",
+        fontsize=8,
+        color="0.25",
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
+    out = FIG / "fig03_delta_surface.png"
+    fig.savefig(out, dpi=300)
+    plt.close(fig)
+    print(f"[fig03] delta1 RMSE={d1_rmse:.4f} delta2 RMSE={d2_rmse:.4f}")
+    return out
+
+
+def fig04(exp: str = "e1") -> Path:
+    seeds, metrics = _load(exp)
+    rec = np.array([m["metrics"]["price"] for m in metrics])
+    simp = np.array([m["metrics"]["price_simpler"] for m in metrics])
+    gap = float(np.max(np.abs(simp - rec) / rec))
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.6))
+    x = np.arange(len(seeds))
+    ax.bar(x - 0.2, rec, width=0.4, label="recurrent $\\delta_{k-1}$", color="#1f77b4")
+    ax.bar(x + 0.2, simp, width=0.4, label="simpler (feed-forward)", color="#9467bd")
+    ax.axhline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper p0={PAPER_P0}")
+    ax.axhspan(1.80, 2.10, color="k", alpha=0.06)
+    ax.set_xticks(x, [f"seed {s}" for s in seeds])
+    ax.set_ylabel("price  $p_0$  (CVaR$_{50}$)")
+    ax.set_title("E1 recurrent vs simpler architecture, zero cost")
+    ax.legend(frameon=False, fontsize=9)
+    ax.text(
+        0.99,
+        0.02,
+        f"max gap {gap:.2%} (criterion < 3%)",
+        transform=ax.transAxes,
+        ha="right",
+        fontsize=9,
+    )
+    fig.text(
+        0.01,
+        0.01,
+        "Fig 4 replication: with zero cost the architecture changes the price by less than 3%.",
+        fontsize=8,
+        color="0.25",
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    out = FIG / "fig04_recurrent_vs_simpler.png"
+    fig.savefig(out, dpi=300)
+    plt.close(fig)
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--exp", default="e1")
+    ap.add_argument("--figs", nargs="+", type=int, default=[2, 3, 4])
+    args = ap.parse_args(argv)
+    FIG.mkdir(parents=True, exist_ok=True)
+    for n in args.figs:
+        if n == 2:
+            print("wrote", fig02(args.exp))
+        elif n == 3:
+            print("wrote", fig03(args.exp))
+        elif n == 4:
+            print("wrote", fig04(args.exp))
+        else:
+            raise SystemExit(f"unknown figure {n}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

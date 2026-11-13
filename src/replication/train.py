@@ -22,12 +22,12 @@ from src.common.logging import human_secs, setup_logger
 from src.common.metrics import save_pnl, write_metrics
 from src.common.seed import resolve_device, seed_everything
 from src.common.types import RunPaths
-from src.replication import smoke
+from src.replication import e1, smoke
 
 Runner = Callable[[dict[str, Any], int, torch.device, logging.Logger], dict[str, Any]]
 
 # kind -> runner；新增环境（heston / bs）在这里注册，config 里用 kind 选择。
-RUNNERS: dict[str, Runner] = {"smoke": smoke.run}
+RUNNERS: dict[str, Runner] = {"smoke": smoke.run, "e1": e1.run, "e1d1": e1.run}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -73,7 +73,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             device=device,
             n_paths=int(payload["n_paths"]),
         )
-        save_pnl(paths.pnl, payload["terminal_loss"])
+        save_pnl(paths.pnl, payload["terminal_loss"], **payload.get("extra_pnl", {}))
+        for name, obj in payload.get("artifacts", {}).items():
+            torch.save(obj, paths.run_dir / name)
         log.info(
             "done runtime=%s passed=%s -> %s",
             human_secs(runtime),

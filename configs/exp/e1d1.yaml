@@ -1,0 +1,34 @@
+# e1d1：Heston d=1（只对冲标的），为 B2 回测冻结 policy_heston_d1（spec §6 A1 任务 4）。
+exp: e1d1
+kind: e1d1
+seeds: [0, 1, 2, 3, 4]
+device: auto
+n_steps: 30
+batch: 256
+eps: 0.0
+alpha: 0.5
+
+policy:
+  name: recurrent
+  hidden: 16          # d + 15
+  recurrent: true
+  batch_norm: true
+
+market:
+  model: heston
+  d: 1
+  s0: 100.0
+  k: 100.0
+  t: 0.08219178082191781
+  kappa: 1.0
+  theta: 0.04
+  sigma: 2.0
+  rho: -0.7
+  v0: 0.04
+
+train:
+  n_iter: 3000
+  lr: 0.005
+  eval_paths: 100000
+  eval_seed_offset: 10000
+  log_every: 250

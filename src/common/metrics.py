@@ -21,6 +21,8 @@ def cvar(x: Tensor, alpha: float) -> Tensor:
     """平均 VaR / CVaR：最差 (1-alpha) 比例的均值；alpha 是置信水平（0.5 / 0.95 / 0.99）。"""
     if not 0.0 < alpha < 1.0:
         raise ValueError(f"alpha must be in (0, 1), got {alpha}")
+    if not isinstance(x, torch.Tensor):  # 便利：也接受 ndarray / list
+        x = torch.as_tensor(np.asarray(x, dtype=float))
     flat = x.reshape(-1)
     n = flat.numel()
     if n == 0:
