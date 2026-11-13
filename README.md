@@ -61,6 +61,8 @@ cd E:\cityu\sdsc4107\project
 
 - Python 环境就在本目录：`project\.venv`（828 MB，已从上级 `.venv` 迁入，console 脚本已重生成）。
   - 直接调用：`.venv\Scripts\python.exe -m pip ...`；`pip` / `pip3` / `pip3.12` 已修复可用。
-  - 已装：pfhedge 0.23.0、torch 2.15.0+cpu、numpy 1.26.4、pandas 3.0.6、matplotlib 3.11.2、sympy 1.14.0。
+  - 已装（完整清单见 `requirements.lock.txt`）：pfhedge 0.23.0、torch 2.15.0+cpu、numpy 1.26.4、scipy 1.13.1、pandas 3.0.6、matplotlib 3.11.2、sympy 1.14.0、PyYAML 6.0.3、pytest 9.2.0、ruff 0.17.5。
+  - **numpy 必须 <2**：pfhedge 0.23.0 声明 `numpy<2.0,>=1.26`；scipy 相应钉 1.13.1（scipy ≥1.18 要求 numpy≥2，会互相打架）。装包时先 `numpy==1.26.4` 再 `scipy==1.13.1`，最后 `pip check` 确认无冲突。
+  - 装包加 `-i https://pypi.org/simple`：本机默认清华源对部分 wheel 返回 HTTP 403。
 - **torch 目前是 CPU 版，这是刻意的**：组里四台机器不统一，代码用 `device=auto`，CPU 也能跑通全流程。有 N 卡的（我这台 5070 Ti 属 sm_120，要 cu128 版）各自按机器装；每个结果里的 `device` / `torch_version` 会记录是哪台机器跑的（spec §5.2）。
 - 数据不进 git：`data/`、`results/` 都忽略，抓取脚本在 `scripts/`（开工后建）。
