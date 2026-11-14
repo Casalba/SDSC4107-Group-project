@@ -179,3 +179,19 @@ price 样本 sd 6.6×10^-4；δ1 RMSE 0.0943–0.1129；四个数字判据加 `d
 - `refs/`（120 MB）：pfhedge / deephedging 只读快照，README 已说明「不改、不提交」。
 - `results/e1/*/pnl.npz`（约 117 MB）：Fig 2/3 与 δ 重算的原料；删了就得重跑 32 min×5。
 - `results/sweep/`（1.7 MB）：8 个配方对照的原始记录（`e1_diagnosis.md` §6 的表）。
+
+---
+
+## 8. 上线 GitHub + 修远端 CI（2026-11-14 16:30）
+
+**仓库**：<https://github.com/Casalba/SDSC4107-Group-project>（public，默认分支 `master`）。
+首次 push 为 `cd975de`（187 objects / 3.41 MiB）；`.venv/`、`results/`、`refs/` 均在 `.gitignore` 内未上传，
+远端 tree 与本地 `git ls-files` 逐文件一致（71 个）。
+
+**远端 CI 修复**：首跑（`cd975de`）红在 CI 步骤——`ci.yml` 的 Install 只装 torch / pytest / ruff / numpy / scipy / pyyaml，
+漏了 `pfhedge`，而 `src/replication/env_heston.py` 顶层 `from pfhedge.stochastic import generate_heston`，
+pytest 收集期即 ImportError（exit 2）。`d0024f3` 在 Install 步骤补 `numpy==1.26.4`、`scipy==1.13.1`、`pfhedge==0.23.0`
+（pfhedge 要求 numpy<2，而 numpy>=2 才有 scipy>=1.18，二者互斥；版本与 `requirements.lock.txt` 一致）。
+重跑 CI 绿（Install + CI 两步 success）。README 顶部加了 CI badge。
+
+**凭据**：Git Credential Manager 已存 GitHub 凭据，之后 agent 可直接 push。

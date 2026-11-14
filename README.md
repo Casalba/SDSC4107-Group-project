@@ -1,5 +1,7 @@
 # SDSC4107 · Deep Hedging 复现 × 港股交叉验证
 
+[![ci](https://github.com/Casalba/SDSC4107-Group-project/actions/workflows/ci.yml/badge.svg)](https://github.com/Casalba/SDSC4107-Group-project/actions/workflows/ci.yml)
+
 > 状态：**A1 完成**（骨架 + pfhedge 适配层 + 检查点 B0 + E1 五 seed + Fig 2/3/4 + 英文方法说明）。
 > 下一步：A2（E2/E3/E4）与 B 组（港股、回测，接入 `policy_heston_d1`）。
 
