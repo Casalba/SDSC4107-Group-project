@@ -204,6 +204,8 @@ The claim this experiment supports is reproduction, not dominance.
   (recurrent vs simpler per seed).
 * `python -m scripts.export_policy_d1` — freezes the \(d=1\) policy into
   `src/policy/weights/heston_d1.pt` for the backtest team (B2).
+* `python -m scripts.recompute_d1_delta` — recomputes the \(d=1\) \(\delta_1\) RMSE/MAE quoted in §9.2
+  (the `pnl.npz` files store only losses, not positions).
 * `scripts/ci.py` runs ruff (check + format) and the unit tests; each `metrics.json` records the git
   commit and a dirty flag. Both batches were rerun on 2026-11-14 from tracked trees: E1 at `c3bc2ab`
   (only documentation files uncommitted, so its JSON carries `dirty: true`; `src/` untouched) and
@@ -277,8 +279,10 @@ Two differences from \(d=2\) are worth stating.
   \(\mathrm{CVaR}_{50}\). Without the variance swap the analytic delta hedge leaves the vega exposure
   unhedged, which shows up as a fat left tail (\(\mathrm{CVaR}_{99}=8.6\) against 3.5 in \(d=2\)),
   and a network that optimises the worst half of the loss learns a different strategy rather than
-  approximating the analytic delta: on 20 000 fresh paths its \(\delta_1\) has RMSE 0.24 (MAE 0.19)
-  against the model \(\delta_1\). This is the paper's qualitative claim for the single-instrument
+  approximating the analytic delta: on 20 000 fresh paths its \(\delta_1\) has RMSE 0.24 (MAE 0.20)
+  against the model \(\delta_1\) at \(k=15\), \(S\in[90,110]\) (seed 0; 0.20–0.31 across the five
+  seeds, so the seed-to-seed spread is comparable to the gap itself). This is the paper's
+  qualitative claim for the single-instrument
   case, reproduced — and it is the opposite of the \(d=2\) outcome, where the network merely matched
   the analytic hedge.
 * **Recurrence still does not matter** (2.5224 vs 2.5338, i.e. 0.4% and in the *favourable*

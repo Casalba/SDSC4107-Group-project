@@ -135,6 +135,11 @@ price 样本 sd 6.6×10^-4；δ1 RMSE 0.0943–0.1129；四个数字判据加 `d
 与旧跑（2.5337 ± 0.007，`fe04fe0(dirty)`，31.8 min）比：均值差 1×10^-4，逐 seed ≤8×10^-4，在 seed 噪声内；
 结论（比解析 δ1 对冲低 ~10%、simpler 差 0.4%、CVaR99 8.5）全部不变。
 
+顺手补了一次重算：§9.2 的「δ1 RMSE 0.24（MAE 0.19）」原先没有脚本可复现（`pnl.npz` 只存 loss）。
+新增 `scripts/recompute_d1_delta.py`（seed 0、2×10⁴ 条新路径、k=15、S∈[90,110]）：新权重得
+**RMSE 0.2432 / MAE 0.2001**（旧权重 0.2408 / 0.1958），5 个 seed 的 RMSE 为 0.198–0.307。
+文档已改为「RMSE 0.24（MAE 0.20）」并补上协议与 seed 范围。
+
 `scripts.export_policy_d1` 已用新 seed 0 重新导出 `src/policy/weights/heston_d1.pt`：meta 里
 `source_git_commit` / `export_git_commit` = c6ef7da，`eval_metrics` 与新结果一致；`tests/test_policy_d1.py` 2 passed。
 已同步 `experiments.md`（e1d1 行）、`method_replication.md`（§8 出处、§9.2 表与两处百分比）、`plan.md` L3、`spec.md` §9。
