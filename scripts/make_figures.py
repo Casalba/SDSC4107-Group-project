@@ -56,29 +56,32 @@ def fig02(exp: str = "e1") -> Path:
     lo = max(min(loss.min(), bench.min()), -2.6)
     hi = float(np.percentile(loss, 99.9))
     bins = np.linspace(lo, hi, 140)
+    bench_color = "#7f7f7f"  # spec §10：基准用灰
+    net_color = "#1f77b4"  # spec §10：网络用蓝
     ax.hist(
         bench,
         bins=bins,
         density=True,
-        alpha=0.45,
+        histtype="step",
+        lw=1.6,
         label=f"Heston delta hedge (CVaR$_{{50}}$={c_bench:.3f})",
-        color="#ff7f0e",
+        color=bench_color,
     )
     ax.hist(
         loss,
         bins=bins,
         density=True,
-        alpha=0.50,
+        histtype="stepfilled",
+        alpha=0.45,
+        lw=1.2,
+        edgecolor=net_color,
         label=f"deep hedge (CVaR$_{{50}}$={c_net:.3f})",
-        color="#1f77b4",
+        color=net_color,
     )
-    ax.axvline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
+    ax.axvline(PAPER_P0, color="#d62728", ls="--", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
     ax.set_xlim(lo, hi + 0.4)
     ax.set_xlabel("terminal hedging loss  $L$  (units of \\$)")
     ax.set_ylabel("density")
-    ax.set_title(
-        f"E1 loss distribution, Heston $d$=2, avg-CVaR(0.5), {len(seeds)} seeds, zero cost"
-    )
     ax.legend(frameon=False, fontsize=9, loc="upper left")
     ax.text(
         0.02,
@@ -94,13 +97,14 @@ def fig02(exp: str = "e1") -> Path:
     )
     fig.text(
         0.01,
-        0.01,
-        f"Fig 2 replication: the trained network prices the option at {price:.3f} "
-        f"(paper {PAPER_P0}) and matches the analytic hedge ({c_bench:.3f}).",
+        0.005,
+        f"Fig 2 replication (E1, Heston $d$=2, avg-CVaR(0.5), {len(seeds)} seeds, zero cost): the trained network\n"
+        f"prices the option at {price:.3f} (paper {PAPER_P0}) and matches the analytic hedge ({c_bench:.3f}).",
         fontsize=8,
         color="0.25",
+        va="bottom",
     )
-    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     out = FIG / "fig02_loss_hist.png"
     fig.savefig(out, dpi=300)
     plt.close(fig)
@@ -191,19 +195,18 @@ def fig03(exp: str = "e1", k: int = 15) -> Path:
         ax.set_xlabel("spot $S_{15}$")
         ax.set_ylabel("variance $v_{15}$")
         fig.colorbar(mesh, ax=ax, fraction=0.046, pad=0.03)
-    fig.suptitle(
-        f"E1 delta surface at $t=15$d: 5-seed mean network vs Heston model "
-        f"({mask.sum()}/{len(mask)} paths in window)"
-    )
     fig.text(
         0.01,
-        0.01,
-        f"Fig 3 replication: on the (S,v) window the network reproduces the model $\\delta_1$ "
-        f"(RMSE {d1_rmse:.3f}) and the shape of $\\delta_2$ (RMSE {d2_rmse:.1f} on a ~500 scale).",
+        0.005,
+        f"Fig 3 replication (E1, $t=15$d, 5-seed mean network vs Heston model, "
+        f"{mask.sum()}/{len(mask)} paths in the window): the network reproduces\n"
+        f"the model $\\delta_1$ (RMSE {d1_rmse:.3f}) and the shape of $\\delta_2$ "
+        f"(RMSE {d2_rmse:.1f} on a ~500 scale).",
         fontsize=8,
         color="0.25",
+        va="bottom",
     )
-    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
     out = FIG / "fig03_delta_surface.png"
     fig.savefig(out, dpi=300)
     plt.close(fig)
@@ -225,15 +228,15 @@ def fig04(exp: str = "e1") -> Path:
         ax.plot([xi, xi], [r, si], color="0.65", lw=1.4, zorder=1)
     ax.scatter(x, rec, s=75, color="#1f77b4", label="recurrent $\\delta_{k-1}$", zorder=3)
     ax.scatter(x, simp, s=75, color="#9467bd", marker="s", label="simpler (feed-forward)", zorder=3)
-    ax.axhline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
-    ax.axhline(bm, color="#ff7f0e", ls="--", lw=1.2, label=f"Heston $\\delta$ hedge ({bm:.3f})")
+    ax.axhline(PAPER_P0, color="#d62728", ls="--", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
+    bm = float(bench.mean())
+    ax.axhline(bm, color="#7f7f7f", ls="--", lw=1.2, label=f"Heston $\\delta$ hedge ({bm:.3f})")
     ax.set_xticks(x, [f"seed {s}" for s in seeds])
     ax.set_xlim(-0.6, len(seeds) - 0.4)
     ax.set_ylim(
         min(rec.min(), simp.min(), bm) - 0.0015, max(rec.max(), simp.max(), PAPER_P0) + 0.0035
     )
     ax.set_ylabel("price  $p_0$  (CVaR$_{50}$)")
-    ax.set_title("E1 recurrent vs simpler architecture, zero cost")
     ax.legend(frameon=False, fontsize=8.5, loc="upper left", ncol=2)
     for xi, r, si in zip(x, rec, simp, strict=True):
         ax.annotate(
@@ -255,12 +258,14 @@ def fig04(exp: str = "e1") -> Path:
     )
     fig.text(
         0.01,
-        0.01,
-        "Fig 4 replication: with zero cost the architecture changes the price by less than 3%.",
+        0.005,
+        "Fig 4 replication (E1, zero cost): the recurrent and simpler architectures agree to 0.15% in price,\n"
+        "so with the Markov state $(S,v)$ observable the previous position adds no information.",
         fontsize=8,
         color="0.25",
+        va="bottom",
     )
-    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     out = FIG / "fig04_recurrent_vs_simpler.png"
     fig.savefig(out, dpi=300)
     plt.close(fig)

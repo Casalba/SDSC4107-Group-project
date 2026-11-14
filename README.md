@@ -1,6 +1,7 @@
 # SDSC4107 · Deep Hedging 复现 × 港股交叉验证
 
-> 状态：**G0 骨架就绪**（`src/common`、`src/policy`、`train` 入口、测试与 CI）。下一步：pfhedge 适配层（`env_heston.py` / `env_bs.py` / `net_recurrent.py` / `losses.py`）。
+> 状态：**A1 完成**（骨架 + pfhedge 适配层 + 检查点 B0 + E1 五 seed + Fig 2/3/4 + 英文方法说明）。
+> 下一步：A2（E2/E3/E4）与 B 组（港股、回测，接入 `policy_heston_d1`）。
 
 ## 先读两份文档
 
@@ -23,15 +24,19 @@ project/
 │   ├─ plan.md          # 方案 v1.3
 │   ├─ spec.md          # 协作规范 v1.2
 │   ├─ experiments.md   # 实验登记表（spec §9）
+│   ├─ b0.md            # 检查点 B0：三条对拍与通过与否
+│   ├─ e1_diagnosis.md  # E1 收敛问题的诊断、8 个配方、5 seed 表
+│   ├─ method_replication.md  # 英文方法说明（§5 的复现口径与 deviation 表）
 │   └─ paper/           # deephedging.pdf + section5.txt / section5b.txt（论文与摘录）
 ├─ src/
 │   ├─ common/          # config seed logging metrics types
-│   ├─ policy/          # policy.py（冻结接口）
-│   └─ replication/     # train.py + smoke.py（G0）；env_* / losses / benchmark 待补
-├─ configs/exp/         # debug.yaml（G0）；e1.yaml ... 待补
+│   ├─ policy/          # policy.py（冻结接口）+ weights/heston_d1.pt（A1→B2 交接件）
+│   └─ replication/     # env_heston env_bs net_recurrent losses benchmark pricing e1 train smoke
+├─ configs/exp/         # debug.yaml / e1.yaml / e1d1.yaml
 ├─ tests/
-├─ scripts/             # ci.py；fetch_hk.py / check_b0.py / repro.py 待补
-├─ figures/             # 报告终版图
+├─ scripts/             # ci / check_b0 / make_figures / sweep_recipes / export_policy_d1
+│   └─ diagnostics/     # 一次性诊断探针（追溯用，不参与 CI）
+├─ figures/             # fig02_loss_hist / fig03_delta_surface / fig04_recurrent_vs_simpler
 ├─ reports/             # 英文正文
 └─ refs/                # 第三方仓库快照，只读参考，不改、不提交
     ├─ pfhedge/         # pfnet-research/pfhedge @ 1fc08c7 (2024-08-30)
@@ -51,6 +56,21 @@ cd E:\cityu\sdsc4107\project
 ```
 
 本地 CI（ruff + pytest，与 GitHub Actions 同源）：`.venv\Scripts\python.exe scripts\ci.py`。
+
+## A1 现在能跑什么
+
+下面每条都用 `.venv\Scripts\python.exe -m ...` 从仓库根目录跑。
+
+| 命令 | 干什么 | 产物 |
+|---|---|---|
+| `scripts.check_b0` | Heston 价 / 方差互换 / 中间时点三条对拍（4 s） | `results/b0/b0.json`，结论在 [docs/b0.md](docs/b0.md) |
+| `src.replication.train --config configs/exp/e1.yaml --seed k` | E1 一个 seed（单核约 60 min，5 个并行更划算） | `results/e1/k/`（含 `metrics.json`） |
+| `scripts.make_figures` | Fig 2/3/4，需要 `results/e1/0..4` | `figures/*.png`（300 dpi） |
+| `scripts.export_policy_d1` | 冻结 d=1 策略，交 B2 回测 | `src/policy/weights/heston_d1.pt` |
+| `scripts.sweep_recipes --list` | 8 个训练配方的并行对照（定了 E1 的配方） | `results/sweep/summary.md` |
+
+E1 定稿数字：5 seed price **1.9432 ± 0.0006**（论文 1.94，解析 δ 对冲 1.9346），
+mean loss 1.6912 vs q 1.69183。配方怎么选出来的见 [docs/e1_diagnosis.md](docs/e1_diagnosis.md) §6。
 
 ## 参考仓库怎么看
 

@@ -70,9 +70,9 @@ Plan B（若仍不收敛）：用解析 δ 做 300 步监督热启动，再切 C
 
 ## 5. 复跑入口
 
-    python -m scripts.train e1 --seed 0      # 单 seed（configs/exp/e1.yaml）
-    python -m scripts.train e1d1 --seed 0    # d=1
-    python -m scripts.check_b0               # B0 三对拍
+    python -m src.replication.train --config configs/exp/e1.yaml --seed 0     # d=2
+    python -m src.replication.train --config configs/exp/e1d1.yaml --seed 0   # d=1
+    python -m scripts.check_b0                                               # B0 三对拍
 
 诊断脚本在 `scripts/diagnostics/`（一次性，保留仅为追溯；`scripts/sweep_recipes.py` 是第 6 节那张表的复现入口）。
 
