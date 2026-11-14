@@ -21,7 +21,7 @@ project/
 ├─ requirements.lock.txt
 ├─ .venv/               # Python 3.12 环境（828 MB，已从上级目录迁入）
 ├─ docs/
-│   ├─ plan.md          # 方案 v1.3
+│   ├─ plan.md          # 方案 v1.4
 │   ├─ spec.md          # 协作规范 v1.2
 │   ├─ experiments.md   # 实验登记表（spec §9）
 │   ├─ b0.md            # 检查点 B0：三条对拍与通过与否
@@ -64,13 +64,13 @@ cd E:\cityu\sdsc4107\project
 | 命令 | 干什么 | 产物 |
 |---|---|---|
 | `scripts.check_b0` | Heston 价 / 方差互换 / 中间时点三条对拍（4 s） | `results/b0/b0.json`，结论在 [docs/b0.md](docs/b0.md) |
-| `src.replication.train --config configs/exp/e1.yaml --seed k` | E1 一个 seed（单核约 60 min，5 个并行更划算） | `results/e1/k/`（含 `metrics.json`） |
+| `src.replication.train --config configs/exp/e1.yaml --seed k` | E1 一个 seed（2 线程约 32 min，5 个并行更划算） | `results/e1/k/`（含 `metrics.json`） |
 | `scripts.make_figures` | Fig 2/3/4，需要 `results/e1/0..4` | `figures/*.png`（300 dpi） |
 | `scripts.export_policy_d1` | 冻结 d=1 策略，交 B2 回测 | `src/policy/weights/heston_d1.pt` |
 | `scripts.sweep_recipes --list` | 8 个训练配方的并行对照（定了 E1 的配方） | `results/sweep/summary.md` |
 
-E1 定稿数字：5 seed price **1.9432 ± 0.0006**（论文 1.94，解析 δ 对冲 1.9346），
-mean loss 1.6912 vs q 1.69183。配方怎么选出来的见 [docs/e1_diagnosis.md](docs/e1_diagnosis.md) §6。
+E1 定稿数字：5 seed price **1.9431 ± 0.0007**（论文 1.94，解析 δ 对冲 1.9346），
+mean loss 1.6913 vs q 1.69183。配方怎么选出来的见 [docs/e1_diagnosis.md](docs/e1_diagnosis.md) §6。
 
 ## 参考仓库怎么看
 

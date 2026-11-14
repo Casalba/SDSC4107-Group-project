@@ -167,10 +167,10 @@ class Policy(Protocol):
 ```
 
 - 输入特征（**v1.2 冻结**）：d=1 时 `x_k = [log(S_k/S_0), t_k/T]`（f=2）；d=2 时 `x_k = [log(S_k/S_0), t_k/T, varswap_k/varswap_0]`（f=3）；书面形状 `(B, f)`。
-  - `varswap_k` = 剩余期限方差互换的**公平方差率**（fair strike，年化方差单位，量级 0.04），**不是** MTM 价值、**不是**瞬时方差 `v_k`；`varswap_0` 同口径。`k = n` 无交易，不需要该点。
+  - `varswap_k` = 论文式 (5.4) 的方差互换价格 `S²_k = E_{t_k}[∫_0^T V_s ds]`（剩余段积分 + `L(t_k,V)`；可交易 MTM 价格、martingale；`S²_0 = bT ≈ 0.0033`）。**不是**年化 fair strike（`S²/T`，量级 0.04，带漂移、不可作输入）、**不是**瞬时方差 `v_k`；`varswap_0` 同口径。`k = n` 无交易，不需要该点。（v1.4 修正：0.04 是年化口径，价格口径是 0.0033）
   - 网络宽度：输入层 `f + d`（d=1 为 3、d=2 为 5），隐层 `N1 = N2 = d+15`，输出 `d`。与论文 `N0 = 2d`、`I_k = (log S¹_k, V_k)` 的差异是 documented deviation，写进 `docs/method_replication.md`。
 - `position` 的单位 = **标的份额**（论文 δ 的口径），即 `δ_i` 份工具 i；成本按**名义本金** `c_k = Σ_i ε_i |δ_i,k − δ_i,k−1| S_i,k` 计，首次建仓 `δ_i,−1 = 0` 计入、到期不强制平仓（论文 (5.7)）。
-  - `S_i,k` 是**工具价格**：标的 ≈100、方差互换 ≈0.04 → 同一 ε 下标的腿单位成本约为互换腿的 2500 倍。E3 的解释必须按这个口径（见 plan §10.5）。
+  - `S_i,k` 是**工具价格**：标的 ≈100、方差互换 ≈0.0033（`bT`） → 同一 ε 下标的腿单位成本约为互换腿的 **≈3×10^4 倍**。E3 的解释必须按这个口径（见 plan §10.5）。
 - `reset()` 必须清空 recurrent 隐状态。忘了写 `reset` 是 A 组最常见的 bug，单测要覆盖。
 - **`policy_heston_d1`**：A1 交付，`forward` 输入 f=2、输出 d=1，B 组直接 import 使用，不得改。
 
@@ -183,7 +183,7 @@ class Policy(Protocol):
   "schema_version": "1.0",
   "exp": "e1",
   "seed": 0,
-  "git_commit": "a1b2c3d",
+  "git_commit": "c3bc2ab",
   "dirty": false,
   "created_at": "2026-09-01T10:00:00+08:00",
   "runtime_sec": 1234.5,
@@ -322,8 +322,8 @@ def proportional_cost(positions: Tensor, prices: Tensor, eps: float) -> Tensor: 
 
 | exp | seed/eps/cost | commit | 运行时长 | 关键结果（一句话） | 是否达标 |
 |---|---|---|---|---|---|
-| e1 | 0 | a1b2c3d | 42 min | price 1.95, delta RMSE 0.021 | ✅ |
-| e4bs | 16 | a1b2c3d | 3.1 h | slope 0.66 | ✅ |
+| e1 | seeds 0–4, ε=0 | c3bc2ab | 32 min | price 1.9431, delta RMSE 0.105 | ✅ |
+| e3 | seeds 0–4, ε=0.01 | a1b2c3d | 3.1 h | recurrent 5.51 vs simpler 6.74 | ✅ |
 
 - "是否达标"只写 ✅ / ❌ / ⚠️（⚠️=数值在区间内但机制可疑，要写备注）。
 - 报告的每一张图、每一行数字都要能在这张表里找到来源行。

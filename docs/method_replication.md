@@ -172,7 +172,7 @@ Two implementation lessons:
 With the surface fixed, the analytic hedge prices the option at
 \(\mathrm{CVaR}_{50}=1.9346\) on \(10^5\) paths, and its mean loss is \(1.6914\) against
 \(q=1.69183\) — the sharper check: a delta-hedged book with zero cost must be worth the option price.
-The trained network lands at \(1.9432\), i.e. 0.45% above the analytic hedge and 0.2% from the
+The trained network lands at \(1.9431\), i.e. 0.44% above the analytic hedge and 0.2% from the
 paper's \(p_0=1.94\). We deliberately do **not** claim that the network beats model delta here: at
 zero cost, with the true dynamics known and used to compute \(\delta\), a \(\delta_1\) RMSE of order
 0.1 is exactly the size of the residual gap, and the paper's own E1 numbers are of the same order.
@@ -204,8 +204,9 @@ The claim this experiment supports is reproduction, not dominance.
   (recurrent vs simpler per seed).
 * `python -m scripts.export_policy_d1` — freezes the \(d=1\) policy into
   `src/policy/weights/heston_d1.pt` for the backtest team (B2).
-* `scripts/ci.py` runs ruff (check + format) and the unit tests; every reported number is produced
-  from a clean working tree, and each `metrics.json` records the git commit and a dirty flag.
+* `scripts/ci.py` runs ruff (check + format) and the unit tests; each `metrics.json` records the git
+  commit and a dirty flag. The E1 batch of 2026-11-14 was run from `c3bc2ab` with only documentation
+  files uncommitted (`src/` untouched), so its JSON carries `dirty: true`.
 
 ## 9. Results
 
@@ -216,23 +217,23 @@ fresh paths per seed:
 
 | seed | price \(p_0\) | \(\mathbb{E}[L]\) | \(\mathrm{CVaR}_{99}\) | simpler net | \(\delta_1\) RMSE | analytic hedge |
 |---|---|---|---|---|---|---|
-| 0 | 1.9441 | 1.6929 | 3.546 | 1.9440 | 0.1176 | 1.9362 |
-| 1 | 1.9429 | 1.6912 | 3.506 | 1.9433 | 0.0980 | 1.9338 |
-| 2 | 1.9431 | 1.6907 | 3.577 | 1.9461 | 0.1150 | 1.9344 |
-| 3 | 1.9425 | 1.6901 | 3.517 | 1.9436 | 0.1181 | 1.9333 |
-| 4 | 1.9432 | 1.6912 | 3.557 | 1.9444 | 0.1010 | 1.9354 |
-| **mean** | **1.9432** | **1.6912** | 3.54 | 1.9443 | 0.110 | 1.9346 |
+| 0 | 1.9438 | 1.6927 | 3.548 | 1.9437 | 0.1120 | 1.9362 |
+| 1 | 1.9435 | 1.6914 | 3.518 | 1.9431 | 0.0993 | 1.9338 |
+| 2 | 1.9427 | 1.6908 | 3.580 | 1.9461 | 0.1129 | 1.9344 |
+| 3 | 1.9421 | 1.6901 | 3.521 | 1.9435 | 0.1073 | 1.9333 |
+| 4 | 1.9431 | 1.6913 | 3.563 | 1.9443 | 0.0943 | 1.9354 |
+| **mean** | **1.9431** | **1.6913** | 3.546 | 1.9441 | 0.105 | 1.9346 |
 
 with a seed-to-seed standard deviation of \(6\times10^{-4}\), i.e. the recipe, not the seed, sets the
 answer. Three checks carry the replication:
 
-* **the mean loss must equal \(q\).** \(\mathbb{E}[L]=1.6912\) against \(q=1.69183\), a 0.04% gap.
+* **the mean loss must equal \(q\).** \(\mathbb{E}[L]=1.6913\) against \(q=1.69183\), a 0.03% gap.
   With \(c=0\) and a martingale hedge book this is an identity, which makes it the sharpest test we
   have: it is what exposed the variance-swap discretisation bug (price and mean both 1.60, below
   \(q\), i.e. the network was harvesting the discretisation drift rather than hedging).
-* **the price must land in the paper's band** \([1.80,2.10]\): 1.9432, which is 0.2% from the
-  paper's \(p_0=1.94\) and 0.45% above our analytic Heston delta hedge.
-* **the simpler net must be within 3%** of the recurrent one: it is within 0.15% — see Fig. 4.
+* **the price must land in the paper's band** \([1.80,2.10]\): 1.9431, which is 0.2% from the
+  paper's \(p_0=1.94\) and 0.44% above our analytic Heston delta hedge.
+* **the simpler net must be within 3%** of the recurrent one: it is within 0.06% — see Fig. 4.
 
 **Fig. 2** overlays the two loss distributions (network, analytic delta hedge, \(10^5\) paths × 5
 seeds). They are visually indistinguishable: with the true dynamics known and both legs traded, the
