@@ -250,9 +250,48 @@ leg, which costs it \(\approx0.4\%\) in \(\mathrm{CVaR}_{50}\).
 
 **Fig. 4** contrasts the recurrent (\(\delta_{k-1}\) fed back) and simpler architectures per seed.
 The gap is \([-0.1,+3.0]\times10^{-3}\) in price, i.e. ≤0.15%, directional (recurrent ≤ simpler) but
-negligible. This is expected rather than a defect: in the Heston model \((S_k,v_k)\) is already a
-Markov state and is fully observable to the network, so the previous position carries almost no
-information the features do not. The paper's setting where recurrence matters is the one where the
-state is *not* observed — BS with unobservable stochastic vol (E4-BS) — not E1.
+negligible. This is expected rather than a defect: the Heston state \((S_k,v_k)\) is observable to
+the network and already Markov, so the previous position carries almost no information the features
+do not. The paper's setting where recurrence matters is the one where the state is *not* observed —
+the \(d=1\) variant below, where the variance is missing entirely.
+
+### 9.2 E1d1: Heston \(d=1\), zero cost, \(\alpha=0.5\)
+
+The \(d=1\) variant trades the underlying only: same world, features \(x_k=[\log(S_k/S_0),t_k/T]\),
+\(f=2\), no recurrence needed to represent the payoff. Five seeds, same recipe (32 min each):
+
+| seed | price \(p_0\) | \(\mathbb{E}[L]\) | \(\mathrm{CVaR}_{99}\) | simpler net | analytic \(\delta_1\) hedge |
+|---|---|---|---|---|---|
+| 0 | 2.5289 | 1.6923 | 8.595 | 2.5167 | 2.8363 |
+| 1 | 2.5295 | 1.6926 | 8.621 | 2.5186 | 2.8454 |
+| 2 | 2.5275 | 1.6907 | 8.433 | 2.5292 | 2.8355 |
+| 3 | 2.5430 | 1.7001 | 8.591 | 2.5215 | 2.8399 |
+| 4 | 2.5394 | 1.6985 | 8.571 | 2.5263 | 2.8344 |
+| **mean** | **2.5337** | **1.6949** | 8.56 | 2.5225 | 2.8383 |
+
+Two differences from \(d=2\) are worth stating.
+
+* **Here the deep hedge beats model delta by 10%**: \(2.534\) against \(2.838\) in
+  \(\mathrm{CVaR}_{50}\). Without the variance swap the analytic delta hedge leaves the vega exposure
+  unhedged, which shows up as a fat left tail (\(\mathrm{CVaR}_{99}=8.6\) against 3.5 in \(d=2\)),
+  and a network that optimises the worst half of the loss learns a different strategy rather than
+  approximating the analytic delta: on 20 000 fresh paths its \(\delta_1\) has RMSE 0.24 (MAE 0.19)
+  against the model \(\delta_1\). This is the paper's qualitative claim for the single-instrument
+  case, reproduced — and it is the opposite of the \(d=2\) outcome, where the network merely matched
+  the analytic hedge.
+* **Recurrence still does not matter** (2.5225 vs 2.5337, i.e. 0.4% and in the *favourable*
+  direction for the simpler net, within the 3% criterion). This is the setting where the variance is
+  unobserved and \(\delta_{k-1}\) could proxy for it, so the null result is informative: the position
+  history adds nothing that the time-to-maturity coordinate does not already capture at this
+  maturity/cost. The paper's Fig. 4 comparison is made with costs, which is where we would expect
+  the effect to appear (E3, A2's task).
+* The mean-loss check is looser here by necessity: one seed averages \(10^5\) losses whose standard
+  deviation is large enough that \(\mathbb{E}[L]\) deviates from \(q\) by 0.001–0.008 (0.05–0.5%),
+  which is why the tolerance is 0.02 rather than the 0.005 we could use in \(d=2\).
+
+The frozen \(d=1\) policy is exported for the backtest leg: `scripts/export_policy_d1.py` writes
+`src/policy/weights/heston_d1.pt` (192 KB, seed 0, with the feature spec, market parameters, seed,
+training config and evaluation metrics in its `meta`), and `src/policy/heston_d1.load()` rebuilds it
+against the frozen `Policy` interface for B2.
 
 

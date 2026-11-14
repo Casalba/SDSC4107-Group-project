@@ -4,7 +4,7 @@ kind: e1d1
 seeds: [0, 1, 2, 3, 4]
 device: auto
 n_steps: 30
-batch: 256
+batch: 1024
 eps: 0.0
 alpha: 0.5
 
@@ -12,7 +12,8 @@ policy:
   name: recurrent
   hidden: 16          # d + 15
   recurrent: true
-  batch_norm: true
+  norm: layer
+  out_scale: 1.0      # d=1 只有标的腿，δ1 ~0.5，无需放大
 
 market:
   model: heston
@@ -27,8 +28,10 @@ market:
   v0: 0.04
 
 train:
-  n_iter: 3000
+  n_iter: 30000
   lr: 0.005
+  lr_schedule: cosine   # 同 e1：恒定 lr 停在极限环
+  lr_min: 5.0e-4
   eval_paths: 100000
   eval_seed_offset: 10000
-  log_every: 250
+  log_every: 2500

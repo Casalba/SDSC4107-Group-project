@@ -42,10 +42,14 @@ def build_from_checkpoint(
         n_steps=int(meta["n_steps"]),
         hidden=int(meta["hidden"]),
         recurrent=bool(meta["recurrent"]),
-        batch_norm=bool(meta["batch_norm"]),
+        batch_norm=bool(meta.get("batch_norm", True)),
+        norm=meta.get("norm"),
+        out_scale=meta.get("out_scale", 1.0),
     )
     policy.load_state_dict(payload["state_dict"])
     policy.to(device=device, dtype=torch.float64).eval()
+    for p in policy.parameters():  # 冻结：回测里不该有梯度
+        p.requires_grad_(False)
     return policy
 
 

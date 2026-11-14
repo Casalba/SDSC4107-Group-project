@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
         "hidden": int(cfg["policy"].get("hidden", market.d + 15)),
         "recurrent": bool(cfg["policy"].get("recurrent", True)),
         "batch_norm": bool(cfg["policy"].get("batch_norm", True)),
+        "norm": cfg["policy"].get("norm"),
+        "out_scale": cfg["policy"].get("out_scale", 1.0),
         "feature_spec": ["log(S_k/S_0)", "t_k/T"],
         "market": {
             k: cfg["market"][k] for k in ("s0", "k", "t", "kappa", "theta", "sigma", "rho", "v0")
