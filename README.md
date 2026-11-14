@@ -12,6 +12,8 @@
 
 冲突时：范围与判据看 plan，格式与流程看 spec。
 
+A1 的方法与结果汇总（中文，含数字表、图与复现命令）：[docs/report_a1.md](docs/report_a1.md)。
+
 ## 目录
 
 ```
@@ -19,25 +21,28 @@ project/
 ├─ README.md            # 本文件
 ├─ pyproject.toml       # pytest / ruff 配置
 ├─ requirements.lock.txt
-├─ .venv/               # Python 3.12 环境（828 MB，已从上级目录迁入）
+├─ .venv/               # Python 3.12 环境（约 1.0 GB，已从上级目录迁入）
 ├─ docs/
 │   ├─ plan.md          # 方案 v1.4
 │   ├─ spec.md          # 协作规范 v1.2
 │   ├─ experiments.md   # 实验登记表（spec §9）
 │   ├─ b0.md            # 检查点 B0：三条对拍与通过与否
-│   ├─ e1_diagnosis.md  # E1 收敛问题的诊断、8 个配方、5 seed 表
+│   ├─ e1_diagnosis.md  # E1 收敛问题的诊断、8 个配方、5 seed 表（§6 定稿）
+│   ├─ report_a1.md     # A1 报告：方法 + 结果 + 复现命令
+│   ├─ changelog.md     # 文档/结果同步的变更记录与待办
 │   ├─ method_replication.md  # 英文方法说明（§5 的复现口径与 deviation 表）
-│   └─ paper/           # deephedging.pdf + section5.txt / section5b.txt（论文与摘录）
+│   ├─ paper/           # deephedging.pdf + section5.txt / section5b.txt（论文与摘录）
+│   └─ paper_fulltext_v1.txt  # 机器抽取全文（91 KB，顶部有 LOSSY 警告；仅供检索）
 ├─ src/
 │   ├─ common/          # config seed logging metrics types
 │   ├─ policy/          # policy.py（冻结接口）+ weights/heston_d1.pt（A1→B2 交接件）
 │   └─ replication/     # env_heston env_bs net_recurrent losses benchmark pricing e1 train smoke
 ├─ configs/exp/         # debug.yaml / e1.yaml / e1d1.yaml
 ├─ tests/
-├─ scripts/             # ci / check_b0 / make_figures / sweep_recipes / export_policy_d1
+├─ scripts/             # ci / check_b0 / make_figures / sweep_recipes / export_policy_d1 / recompute_d1_delta
 │   └─ diagnostics/     # 一次性诊断探针（追溯用，不参与 CI）
 ├─ figures/             # fig02_loss_hist / fig03_delta_surface / fig04_recurrent_vs_simpler
-├─ reports/             # 英文正文
+├─ reports/             # 英文正文（A2 起建；A1 的正文在 docs/method_replication.md）
 └─ refs/                # 第三方仓库快照，只读参考，不改、不提交
     ├─ pfhedge/         # pfnet-research/pfhedge @ 1fc08c7 (2024-08-30)
     └─ deephedging/     # hansbuehler/deephedging @ fe53fd9 (2026-01-22)（notebooks 保留）
@@ -79,7 +84,7 @@ mean loss 1.6913 vs q 1.69183。配方怎么选出来的见 [docs/e1_diagnosis.m
 
 ## 环境
 
-- Python 环境就在本目录：`project\.venv`（828 MB，已从上级 `.venv` 迁入，console 脚本已重生成）。
+- Python 环境就在本目录：`project\.venv`（约 1.0 GB，已从上级 `.venv` 迁入，console 脚本已重生成）。
   - 直接调用：`.venv\Scripts\python.exe -m pip ...`；`pip` / `pip3` / `pip3.12` 已修复可用。
   - 已装（完整清单见 `requirements.lock.txt`）：pfhedge 0.23.0、torch 2.15.0+cpu、numpy 1.26.4、scipy 1.13.1、pandas 3.0.6、matplotlib 3.11.2、sympy 1.14.0、PyYAML 6.0.3、pytest 9.2.0、ruff 0.17.5。
   - **numpy 必须 <2**：pfhedge 0.23.0 声明 `numpy<2.0,>=1.26`；scipy 相应钉 1.13.1（scipy ≥1.18 要求 numpy≥2，会互相打架）。装包时先 `numpy==1.26.4` 再 `scipy==1.13.1`，最后 `pip check` 确认无冲突。

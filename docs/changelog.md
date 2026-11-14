@@ -153,3 +153,29 @@ price 样本 sd 6.6×10^-4；δ1 RMSE 0.0943–0.1129；四个数字判据加 `d
 - **batch 10⁴ 校准实验**：未跑。若跑：固定 3×10⁷ 总路径，`batch 4096 × 7500 iter`（cosine 重设）对照 `1024 × 30000`，各 2 seed。
 - **GPU**：未装 cu128。结论是 E1 不需要（overhead-bound：float32 都不比 float64 快，见实测）；A2/E4 再考虑「大 batch + float32 + 场景池 + jit」。
 - **线程写入 config**：`train.py` 目前只能靠 `OMP_NUM_THREADS` 环境变量，未进 git。可在 A2 前加 `threads:` 配置项。
+
+---
+
+## 7. A1 报告 + 仓库整理（2026-11-14 15:00）
+
+**新增 `docs/report_a1.md`**（A1 报告）：六项交付对照 → 方法（市场/定价与基准/网络/训练/验收检查）→
+结果（E1、E1d1、Fig 2/3/4）→ 复现命令 → 与论文的 deviation 表 → 已知限制 → 附录（产物出处、时间线、体积）。
+所有数字取自 `results/e1/{0..4}/metrics.json`、`results/e1d1/{0..4}/metrics.json` 与 `results/b0/b0.json`，
+可直接重算；README 已加链接。
+
+**顺手修掉的陈旧表述**：
+- `docs/e1_diagnosis.md` 头部状态「未解决」→「已解决（§6 定稿）」，与 5 seed 结果一致（正文其余部分保留诊断过程）。
+- `README.md` 目录树：补 `changelog.md` / `report_a1.md`，`reports/` 标注「A2 起建」，scripts 行补 `recompute_d1_delta`，
+  环境体积 828 MB → 约 1.0 GB。
+
+**仓库清理**（删的都是 gitignore 里可再生成的东西，共 29 MB + 缓存）：
+- `results/e1d1_prev/`（12.8 MB）：E1d1 干净重跑前的备份副本，新结果已确认并入库文档。
+- `results/{e1,e1d1}/_seed*.log`（20 个）：起跑重定向的临时 stdout/stderr（err 全 0 字节，内容已被 `run.log` 覆盖）。
+- `results/b0/heston_surface.npz`（5.2 MB）：旧版定价面缓存，`benchmark.SURFACE_CACHE` 只读 `heston_surface_v2.npz`。
+- `.pytest_cache/`、`.ruff_cache/`、`__pycache__/`：工具缓存。
+
+**保留判断**（不是垃圾，别顺手删）：
+- `docs/paper_fulltext_v1.txt`（91 KB）：机器抽取的论文全文，顶部有 LOSSY 警告，是口径修正的引用依据。
+- `refs/`（120 MB）：pfhedge / deephedging 只读快照，README 已说明「不改、不提交」。
+- `results/e1/*/pnl.npz`（约 117 MB）：Fig 2/3 与 δ 重算的原料；删了就得重跑 32 min×5。
+- `results/sweep/`（1.7 MB）：8 个配方对照的原始记录（`e1_diagnosis.md` §6 的表）。
