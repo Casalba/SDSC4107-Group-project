@@ -33,11 +33,13 @@ def test_runner_returns_metrics_and_artifacts(caplog) -> None:
         assert torch.isfinite(torch.tensor(metrics[key]))
     assert payload["terminal_loss"].shape == (256,)
     assert set(payload["artifacts"]) == {"policy.pt", "policy_simpler.pt"}
-    assert "price_band" in payload["checks"]
+    # price_band（1.80–2.10）是 E1 d=2 的论文靶子；d=1 的 e1d1 没有这个判据
+    assert "price_band" not in payload["checks"]
 
 
 def test_runner_d2_without_benchmark_has_no_rmse() -> None:
     cfg = _cfg(market={"d": 2, "s0": 100.0, "k": 100.0, "t": 5 / 365})
     payload = e1.run(cfg, seed=1, device=torch.device("cpu"), log=logging.getLogger("test"))
     assert "delta_rmse" not in payload["metrics"]
+    assert "price_band" in payload["checks"]
     assert payload["terminal_loss"].shape == (256,)

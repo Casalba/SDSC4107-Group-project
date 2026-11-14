@@ -11,7 +11,8 @@ line-length = 100
 target-version = "py310"
 src = ["src", "tests", "scripts"]
 # docs/ 里是带代码块的 markdown，不让 ruff format 去改它。
-extend-exclude = ["refs", ".venv", "docs", "data", "results", "figures"]
+# scripts/diagnostics/ 是一次性探针（保留为追溯用），不按包的标准要求它。
+extend-exclude = ["refs", ".venv", "docs", "data", "results", "figures", "scripts/diagnostics"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]

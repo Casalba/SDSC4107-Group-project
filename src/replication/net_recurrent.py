@@ -14,16 +14,31 @@ from torch import Tensor, nn
 from src.policy.policy import Policy
 
 
-class StepMLP(nn.Module):
-    """单步前馈：Linear → BN → ReLU → Linear → BN → ReLU → Linear。"""
+def _norm(kind: str, n_hidden: int) -> nn.Module:
+    kind = kind.lower()
+    if kind in {"batch", "batch_norm", "bn"}:
+        return nn.BatchNorm1d(n_hidden)
+    if kind in {"layer", "layer_norm", "ln"}:
+        return nn.LayerNorm(n_hidden)
+    if kind in {"none", "identity"}:
+        return nn.Identity()
+    raise ValueError(f"unknown norm kind: {kind}")
 
-    def __init__(self, n_in: int, n_hidden: int, n_out: int, batch_norm: bool = True) -> None:
+
+class StepMLP(nn.Module):
+    """单步前馈：Linear → norm → ReLU → Linear → norm → ReLU → Linear。
+
+    norm='batch' 是论文做法；'layer' 逐样本归一化，训练/评估行为一致（无 running stats），
+    用于避免"训练用 batch 统计、评估用 running 统计"导致的递归失稳。
+    """
+
+    def __init__(self, n_in: int, n_hidden: int, n_out: int, norm: str = "batch") -> None:
         super().__init__()
         self.fc1 = nn.Linear(n_in, n_hidden)
         self.fc2 = nn.Linear(n_hidden, n_hidden)
         self.out = nn.Linear(n_hidden, n_out)
-        self.bn1 = nn.BatchNorm1d(n_hidden) if batch_norm else nn.Identity()
-        self.bn2 = nn.BatchNorm1d(n_hidden) if batch_norm else nn.Identity()
+        self.bn1 = _norm(norm, n_hidden)
+        self.bn2 = _norm(norm, n_hidden)
 
     def forward(self, x: Tensor) -> Tensor:
         x = torch.relu(self.bn1(self.fc1(x)))
@@ -45,17 +60,28 @@ class SemiRecurrentPolicy(nn.Module, Policy):
         hidden: int | None = None,
         recurrent: bool = True,
         batch_norm: bool = True,
+        norm: str | None = None,
+        out_scale: float | list[float] = 1.0,
     ) -> None:
         super().__init__()
         self.n_features = n_features
         self.d = d
         self.n_steps = n_steps
         self.recurrent = recurrent
+        self.norm_kind = norm if norm is not None else ("batch" if batch_norm else "none")
         n_hidden = int(hidden if hidden is not None else d + 15)
         n_in = n_features + d if recurrent else n_features
         self.steps = nn.ModuleList(
-            [StepMLP(n_in, n_hidden, d, batch_norm=batch_norm) for _ in range(n_steps)]
+            [StepMLP(n_in, n_hidden, d, norm=self.norm_kind) for _ in range(n_steps)]
         )
+        # 输出尺度：δ 的量级差 3 个数量级（标的 ~O(1)，方差互换 ~O(10^2)），
+        # Adam 的步长上限是 lr，直接把 500 学出来极慢，因此对输出做固定重参数化。
+        scale = torch.tensor(out_scale, dtype=torch.float64).reshape(-1)
+        if scale.numel() == 1:
+            scale = scale.repeat(d)
+        if scale.numel() != d:
+            raise ValueError(f"out_scale must be scalar or length {d}, got {out_scale}")
+        self.register_buffer("out_scale", scale)
         self.reset()
 
     def reset(self) -> None:
@@ -70,10 +96,12 @@ class SemiRecurrentPolicy(nn.Module, Policy):
         if self.recurrent:
             if self._prev is None:
                 self._prev = x_k.new_zeros(x_k.shape[0], self.d)
-            inp = torch.cat([x_k, self._prev], dim=-1)
+            # 递归反馈用**原始尺度**（δ/out_scale），否则方差腿的 δ2~500 会以巨大数值
+            # 进入第一层，训练直接发散。
+            inp = torch.cat([x_k, self._prev / self.out_scale], dim=-1)
         else:
             inp = x_k
-        out = net(inp)
+        out = net(inp) * self.out_scale
         self._prev = out
         self._k += 1
         return out
@@ -85,7 +113,7 @@ class SemiRecurrentPolicy(nn.Module, Policy):
         outputs = []
         for k in range(n):
             net = self.steps[k]
-            inp = torch.cat([x[:, k], prev], dim=-1) if self.recurrent else x[:, k]
-            prev = net(inp)
+            inp = torch.cat([x[:, k], prev / self.out_scale], dim=-1) if self.recurrent else x[:, k]
+            prev = net(inp) * self.out_scale
             outputs.append(prev)
         return torch.stack(outputs, dim=1)

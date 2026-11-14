@@ -61,7 +61,12 @@ def check_call(n_paths: int = 200_000) -> dict[str, float | bool | str]:
 
 
 def check_varswap(n_paths: int = 200_000) -> dict[str, float | bool | str]:
-    """② 方差互换闭式（bT）vs MC 的 E[∫V ds]。"""
+    """② 方差互换：鞅性 + 闭式（bT）vs MC 的 E[∫V ds]。
+
+    ∫V ds 按步内条件期望累加（与 env_heston 同一口径）：
+    E[∫Δ V ds | V_j] = (V_j−b)(1−e^{−καΔ})/α + bΔ。用左矩形会在状态相关项上引入
+    −(V_j−b)αΔ²/2 的系统偏差，使 S² 不再是鞅（网络会去套这个漂移）。
+    """
     seed_everything(1)
     _, var = generate_heston(
         n_paths,
@@ -74,13 +79,15 @@ def check_varswap(n_paths: int = 200_000) -> dict[str, float | bool | str]:
         dt=DT,
         dtype=torch.float64,
     )
-    integral = (var[:, :-1] * DT).sum(dim=1).numpy()
+    v = var[:, :-1].numpy()
+    accrual = (v - PAPER.theta) * (-np.expm1(-PAPER.kappa * DT) / PAPER.kappa) + PAPER.theta * DT
+    integral = accrual.sum(axis=1)
     mc = float(integral.mean())
     se = float(integral.std(ddof=1) / np.sqrt(n_paths))
     closed = float(varswap_price_total(PAPER.v0, 0.0, PAPER.maturity))
     rel = abs(mc - closed) / closed
     return {
-        "name": "varswap_closed_form_vs_mc",
+        "name": "varswap_martingale_vs_closed_form",
         "closed_form": closed,
         "mc": mc,
         "mc_se": se,

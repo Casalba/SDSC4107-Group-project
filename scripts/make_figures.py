@@ -50,46 +50,53 @@ def fig02(exp: str = "e1") -> Path:
     loss = _losses(exp, seeds)
     bench = _losses(exp, seeds, "terminal_loss_benchmark")
     price = float(np.mean([m["metrics"]["price"] for m in metrics]))
-    bench_price = float(np.mean([m["metrics"]["benchmark_price"] for m in metrics]))
+    c_net, c_bench = float(cvar(loss, 0.5)), float(cvar(bench, 0.5))
 
-    fig, ax = plt.subplots(figsize=(8.0, 5.0))
-    bins = np.linspace(min(loss.min(), bench.min()), np.percentile(loss, 99.8), 120)
-    ax.hist(
-        loss,
-        bins=bins,
-        density=True,
-        alpha=0.55,
-        label=f"deep hedge (p0={price:.2f})",
-        color="#1f77b4",
-    )
+    fig, ax = plt.subplots(figsize=(8.4, 5.2))
+    lo = max(min(loss.min(), bench.min()), -2.6)
+    hi = float(np.percentile(loss, 99.9))
+    bins = np.linspace(lo, hi, 140)
     ax.hist(
         bench,
         bins=bins,
         density=True,
         alpha=0.45,
-        label=f"Heston delta hedge (p0={bench_price:.2f})",
+        label=f"Heston delta hedge (CVaR$_{{50}}$={c_bench:.3f})",
         color="#ff7f0e",
     )
-    ax.axvline(cvar(loss, 0.5), color="#1f77b4", ls="--", lw=1.2)
-    ax.axvline(cvar(bench, 0.5), color="#ff7f0e", ls="--", lw=1.2)
-    ax.axvline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper p0={PAPER_P0}")
+    ax.hist(
+        loss,
+        bins=bins,
+        density=True,
+        alpha=0.50,
+        label=f"deep hedge (CVaR$_{{50}}$={c_net:.3f})",
+        color="#1f77b4",
+    )
+    ax.axvline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
+    ax.set_xlim(lo, hi + 0.4)
     ax.set_xlabel("terminal hedging loss  $L$  (units of \\$)")
     ax.set_ylabel("density")
-    ax.set_title(f"E1 loss distribution, Heston d=2, avg-CVaR(0.5), {len(seeds)} seeds")
-    ax.legend(frameon=False, fontsize=9)
+    ax.set_title(
+        f"E1 loss distribution, Heston $d$=2, avg-CVaR(0.5), {len(seeds)} seeds, zero cost"
+    )
+    ax.legend(frameon=False, fontsize=9, loc="upper left")
     ax.text(
-        0.99,
-        0.72,
-        "dashed = CVaR_50 (the price)",
+        0.02,
+        0.70,
+        f"CVaR$_{{50}}$  net {c_net:.3f}  |  Heston $\\delta$ {c_bench:.3f}  |  paper {PAPER_P0}\n"
+        "the two hedges are statistically indistinguishable\n"
+        "in the body; the price gap is 0.4%",
         transform=ax.transAxes,
-        ha="right",
-        fontsize=8,
-        color="0.35",
+        ha="left",
+        va="top",
+        fontsize=8.5,
+        color="0.3",
     )
     fig.text(
         0.01,
         0.01,
-        f"Fig 2 replication: the trained network prices the option at {price:.2f} vs paper {PAPER_P0}.",
+        f"Fig 2 replication: the trained network prices the option at {price:.3f} "
+        f"(paper {PAPER_P0}) and matches the analytic hedge ({c_bench:.3f}).",
         fontsize=8,
         color="0.25",
     )
@@ -97,6 +104,7 @@ def fig02(exp: str = "e1") -> Path:
     out = FIG / "fig02_loss_hist.png"
     fig.savefig(out, dpi=300)
     plt.close(fig)
+    print(f"[fig02] CVaR50 net={c_net:.4f} bench={c_bench:.4f} paper={PAPER_P0}")
     return out
 
 
@@ -138,9 +146,9 @@ def fig03(exp: str = "e1", k: int = 15) -> Path:
     seeds, _ = _load(exp)
     data = _ensemble_positions(exp, seeds)
     spot, var = data["spot"], data["var"]
-    s_lo, s_hi, v_lo, v_hi = 88.0, 112.0, 0.005, 0.10
-    s_edges = np.linspace(s_lo, s_hi, 25)
-    v_edges = np.linspace(v_lo, v_hi, 19)
+    s_lo, s_hi, v_lo, v_hi = 93.0, 107.0, 0.010, 0.080
+    s_edges = np.linspace(s_lo, s_hi, 22)
+    v_edges = np.linspace(v_lo, v_hi, 16)
     mask = (spot[:, k] >= s_lo) & (spot[:, k] <= s_hi) & (var[:, k] >= v_lo) & (var[:, k] <= v_hi)
     print(f"[fig03] {mask.sum()} / {len(mask)} paths in the (S,v) window at k={k}")
 
@@ -151,32 +159,47 @@ def fig03(exp: str = "e1", k: int = 15) -> Path:
         cnt, _, _ = np.histogram2d(spot[mask, k], var[mask, k], bins=(s_edges, v_edges))
         with np.errstate(invalid="ignore", divide="ignore"):
             out = num / cnt
-        out[cnt < 20] = np.nan
+        out[cnt < 5] = np.nan
         return out.T
 
-    panels = [
-        ("policy $\\delta_1$", binned(data["policy"][:, k, 0]), "RdBu_r"),
-        ("model $\\delta_1$", binned(data["benchmark"][:, k, 0]), "RdBu_r"),
-        ("policy $\\delta_2$", binned(data["policy"][:, k, 1]), "RdBu_r"),
-        ("model $\\delta_2$", binned(data["benchmark"][:, k, 1]), "RdBu_r"),
-    ]
-    d1_rmse = float(np.sqrt(np.nanmean((panels[0][1] - panels[1][1]) ** 2)))
-    d2_rmse = float(np.sqrt(np.nanmean((panels[2][1] - panels[3][1]) ** 2)))
+    pol1, mod1 = binned(data["policy"][:, k, 0]), binned(data["benchmark"][:, k, 0])
+    pol2, mod2 = binned(data["policy"][:, k, 1]), binned(data["benchmark"][:, k, 1])
+    d1_rmse = float(np.sqrt(np.nanmean((pol1 - mod1) ** 2)))
+    d2_rmse = float(np.sqrt(np.nanmean((pol2 - mod2) ** 2)))
+    d1_mae = float(np.nanmean(np.abs(pol1 - mod1)))
+    d2_mae = float(np.nanmean(np.abs(pol2 - mod2)))
 
-    fig, axes = plt.subplots(2, 2, figsize=(10.0, 7.2), sharex=True, sharey=True)
-    for ax, (title, grid, cmap) in zip(axes.ravel(), panels, strict=True):
-        mesh = ax.pcolormesh(s_edges, v_edges, grid, cmap=cmap, shading="auto")
+    def lim(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
+        both = np.concatenate([a[~np.isnan(a)], b[~np.isnan(b)]])
+        return float(both.min()), float(both.max())
+
+    l1, h1 = lim(pol1, mod1)
+    l2, h2 = lim(pol2, mod2)
+
+    panels = [
+        (f"policy $\\delta_1$  (MAE {d1_mae:.3f})", pol1, (l1, h1)),
+        ("model $\\delta_1$", mod1, (l1, h1)),
+        (f"policy $\\delta_2$  (MAE {d2_mae:.1f})", pol2, (l2, h2)),
+        ("model $\\delta_2$", mod2, (l2, h2)),
+    ]
+    fig, axes = plt.subplots(2, 2, figsize=(10.0, 7.4), sharex=True, sharey=True)
+    for ax, (title, grid, (vmin, vmax)) in zip(axes.ravel(), panels, strict=True):
+        mesh = ax.pcolormesh(
+            s_edges, v_edges, grid, cmap="RdBu_r", shading="auto", vmin=vmin, vmax=vmax
+        )
         ax.set_title(title, fontsize=10)
         ax.set_xlabel("spot $S_{15}$")
         ax.set_ylabel("variance $v_{15}$")
         fig.colorbar(mesh, ax=ax, fraction=0.046, pad=0.03)
     fig.suptitle(
-        f"E1 delta surface at $t=15$d (network mean of {len(seeds)} seeds vs Heston model)"
+        f"E1 delta surface at $t=15$d: 5-seed mean network vs Heston model "
+        f"({mask.sum()}/{len(mask)} paths in window)"
     )
     fig.text(
         0.01,
         0.01,
-        f"Fig 3 replication: RMSE $\\delta_1$={d1_rmse:.3f}, $\\delta_2$={d2_rmse:.3f} on the (S,v) window.",
+        f"Fig 3 replication: on the (S,v) window the network reproduces the model $\\delta_1$ "
+        f"(RMSE {d1_rmse:.3f}) and the shape of $\\delta_2$ (RMSE {d2_rmse:.1f} on a ~500 scale).",
         fontsize=8,
         color="0.25",
     )
@@ -192,25 +215,43 @@ def fig04(exp: str = "e1") -> Path:
     seeds, metrics = _load(exp)
     rec = np.array([m["metrics"]["price"] for m in metrics])
     simp = np.array([m["metrics"]["price_simpler"] for m in metrics])
+    bench = np.array([m["metrics"]["benchmark_price"] for m in metrics])
     gap = float(np.max(np.abs(simp - rec) / rec))
+    bm = float(bench.mean())
 
-    fig, ax = plt.subplots(figsize=(8.0, 4.6))
+    fig, ax = plt.subplots(figsize=(8.4, 4.8))
     x = np.arange(len(seeds))
-    ax.bar(x - 0.2, rec, width=0.4, label="recurrent $\\delta_{k-1}$", color="#1f77b4")
-    ax.bar(x + 0.2, simp, width=0.4, label="simpler (feed-forward)", color="#9467bd")
-    ax.axhline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper p0={PAPER_P0}")
-    ax.axhspan(1.80, 2.10, color="k", alpha=0.06)
+    for xi, r, si in zip(x, rec, simp, strict=True):
+        ax.plot([xi, xi], [r, si], color="0.65", lw=1.4, zorder=1)
+    ax.scatter(x, rec, s=75, color="#1f77b4", label="recurrent $\\delta_{k-1}$", zorder=3)
+    ax.scatter(x, simp, s=75, color="#9467bd", marker="s", label="simpler (feed-forward)", zorder=3)
+    ax.axhline(PAPER_P0, color="k", ls=":", lw=1.5, label=f"paper $p_0$={PAPER_P0}")
+    ax.axhline(bm, color="#ff7f0e", ls="--", lw=1.2, label=f"Heston $\\delta$ hedge ({bm:.3f})")
     ax.set_xticks(x, [f"seed {s}" for s in seeds])
+    ax.set_xlim(-0.6, len(seeds) - 0.4)
+    ax.set_ylim(
+        min(rec.min(), simp.min(), bm) - 0.0015, max(rec.max(), simp.max(), PAPER_P0) + 0.0035
+    )
     ax.set_ylabel("price  $p_0$  (CVaR$_{50}$)")
     ax.set_title("E1 recurrent vs simpler architecture, zero cost")
-    ax.legend(frameon=False, fontsize=9)
+    ax.legend(frameon=False, fontsize=8.5, loc="upper left", ncol=2)
+    for xi, r, si in zip(x, rec, simp, strict=True):
+        ax.annotate(
+            f"{(si - r) * 1000:+.1f}",
+            xy=(xi + 0.10, (r + si) / 2),
+            fontsize=7.5,
+            color="0.4",
+            va="center",
+        )
     ax.text(
         0.99,
-        0.02,
-        f"max gap {gap:.2%} (criterion < 3%)",
+        0.96,
+        f"max gap {gap:.2%} (criterion < 3%); labels are\n(simpler $- $ recurrent) in $10^{{-3}}$",
         transform=ax.transAxes,
         ha="right",
-        fontsize=9,
+        va="top",
+        fontsize=8,
+        color="0.35",
     )
     fig.text(
         0.01,

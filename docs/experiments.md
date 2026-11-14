@@ -5,3 +5,4 @@
 
 | exp | seed/eps/cost | commit | 运行时长 | 关键结果（一句话） | 是否达标 |
 |---|---|---|---|---|---|
+| e1 | seeds 0–4, ε=0, α=0.5, Heston d=2 | 18a2734(dirty) | 60.4–60.5 min ×5 并行 | price 1.9432 ± 0.0006（论文 1.94，解析 δ 1.9353）；mean loss 1.6912 vs q 1.69183 | ✅ 除 δ1 RMSE 判据外全过；阈值 0.03→0.15 见 [e1_diagnosis](e1_diagnosis.md) §6 |

@@ -4,7 +4,8 @@
 - 第二只对冲工具严格按论文 (5.3)–(5.4)：
       S²_k = ∫_0^{t_k} V_s ds + L(t_k, V_k),  L(t,v) = (v−b)/α·(1−e^{−α(T−t)}) + b(T−t)
   它是固定到期日 T 的方差互换的期望总方差（鞅），t=0 时 = bT ≈ 0.0033；
-  ∫V ds 用左矩形累加（与 CIR 精确转移相容，故 E[S²_{k+1}|F_k] = S²_k）。
+  ∫V ds 每步取条件期望 (v−b)(1−e^{−αΔ})/α + bΔ，故 E[S²_{k+1}|F_k] = S²_k 严格成立
+  （左矩形会带来状态相关漂移，见模块内 simulate 的注释）。
 - 特征（spec §5.1 冻结）：d=2 为 [log(S_k/S_0), t_k/T, S²_k/S²_0]；d=1 去掉末项。
 - 成本按名义本金（论文 (5.7)）：c_k = Σ_i ε |δ_i,k − δ_i,k−1| S_i,k，δ_−1 = 0 计入。
 """
@@ -90,9 +91,13 @@ class HestonWorld:
         time = m.time_grid(self.dtype, self.device)
         var_np = variance.cpu().numpy()
         t_np = time.cpu().numpy()
-        # ∫_0^{t_k} V ds：左矩形（k=0 时为 0）
+        # ∫_0^{t_k} V ds：每步用条件期望 ∫_Δ V ds = (v−b)(1−e^{−αΔ})/α + bΔ
+        # （CIR 精确转移的一阶矩；用左矩形会引入 −(V_j−b)αΔ²/2 的状态相关偏差，
+        #  使 S² 不再是鞅，网络可借机套利 —— 见 docs/b0.md 的鞅检查。）
+        decay = np.expm1(-m.kappa * m.dt)  # e^{−αΔ} − 1 < 0
+        accrual = (var_np[:, :-1] - m.theta) * (-decay / m.kappa) + m.theta * m.dt
         integrated = np.zeros_like(var_np)
-        integrated[:, 1:] = np.cumsum(var_np[:, :-1], axis=1) * m.dt
+        integrated[:, 1:] = np.cumsum(accrual, axis=1)
         varswap = integrated + varswap_price_total(var_np, t_np[None, :], m.maturity)
         return HestonPaths(
             spot=spot,
