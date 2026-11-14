@@ -323,6 +323,7 @@ def proportional_cost(positions: Tensor, prices: Tensor, eps: float) -> Tensor: 
 | exp | seed/eps/cost | commit | 运行时长 | 关键结果（一句话） | 是否达标 |
 |---|---|---|---|---|---|
 | e1 | seeds 0–4, ε=0 | c3bc2ab | 32 min | price 1.9431, delta RMSE 0.105 | ✅ |
+| e1d1 | seeds 0–4, ε=0, d=1 | c6ef7da | 26 min | price 2.5338, simpler 2.5224 | ✅ |
 | e3 | seeds 0–4, ε=0.01 | a1b2c3d | 3.1 h | recurrent 5.51 vs simpler 6.74 | ✅ |
 
 - "是否达标"只写 ✅ / ❌ / ⚠️（⚠️=数值在区间内但机制可疑，要写备注）。

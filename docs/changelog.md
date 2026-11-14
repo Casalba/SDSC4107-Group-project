@@ -111,17 +111,39 @@ price 样本 sd 6.6×10^-4；δ1 RMSE 0.0943–0.1129；四个数字判据加 `d
 **结论层面（三句话，已按实际改写）**：
 
 1. 「E1 ✅ **除 δ1 RMSE 判据外**全过」→ 「E1 ✅ **全过**」（δ1 RMSE 0.094–0.113 < 0.15，阈值理由见 `e1_diagnosis` §6）。
-2. **e1d1 仍是 dirty**（`fe04fe0(dirty)`，31.8 min ×5 可清）：要么同样重跑，要么在 `experiments.md`
-   注明「e1d1 只用于 d=1 交接权重与定性对照，其数字不进报告」。
+2. **e1d1 已重跑干净**（`c6ef7da`，26.3 min，2.5338 ± 0.007）：见 §5；`dirty: false`，可进报告。
 3. spec.md §5.2：E1 的 checks 现在全 true，数字可引用；唯一保留的瑕疵是 `dirty: true`（起跑时仅文档未提交，
    `src/` 零改动），已在 `experiments.md` 与本节注明——若审阅方严格要求 `dirty: false`，唯一办法是重跑 32.5 min。
 
 ---
 
-## 5. 遗留 / 未做
+## 5. E1d1 干净重跑（2026-11-14 14:30，已完成）
+
+**做法**：文档与图提交后工作区干净，14:04:12 起 5 进程（`OMP_NUM_THREADS=2`，
+`--config configs/exp/e1d1.yaml --seed 0..4`），runtime 1574–1579 s（26.3 min），
+5 份 metrics 全部 `dirty: false`、`git_commit: c6ef7da`、`passed: true`。
+
+| seed | price | mean loss | CVaR99 | simpler | analytic δ1 hedge |
+|---|---|---|---|---|---|
+| 0 | 2.5291 | 1.6923 | 8.567 | 2.5163 | 2.8363 |
+| 1 | 2.5290 | 1.6923 | 8.590 | 2.5186 | 2.8454 |
+| 2 | 2.5276 | 1.6907 | 8.418 | 2.5295 | 2.8355 |
+| 3 | 2.5429 | 1.6999 | 8.586 | 2.5214 | 2.8399 |
+| 4 | 2.5402 | 1.6990 | 8.573 | 2.5261 | 2.8344 |
+| **mean** | **2.5338** | **1.6948** | 8.55 | 2.5224 | 2.8383 |
+
+与旧跑（2.5337 ± 0.007，`fe04fe0(dirty)`，31.8 min）比：均值差 1×10^-4，逐 seed ≤8×10^-4，在 seed 噪声内；
+结论（比解析 δ1 对冲低 ~10%、simpler 差 0.4%、CVaR99 8.5）全部不变。
+
+`scripts.export_policy_d1` 已用新 seed 0 重新导出 `src/policy/weights/heston_d1.pt`：meta 里
+`source_git_commit` / `export_git_commit` = c6ef7da，`eval_metrics` 与新结果一致；`tests/test_policy_d1.py` 2 passed。
+已同步 `experiments.md`（e1d1 行）、`method_replication.md`（§8 出处、§9.2 表与两处百分比）、`plan.md` L3、`spec.md` §9。
+
+---
+
+## 6. 遗留 / 未做
 
 - **E1 的 `metrics.json` 是 `dirty: true`**：起跑时仅文档未提交（`src/` 零改动），见 §3；要 `dirty: false` 需重跑 32.5 min。
-- **E1-d1 dirty**：同上，未处理（31.8 min ×5 并行可清）。
 - **`python -m src.repro` 不存在**：plan §8 的「一键出表」验收项还差 `src/repro.py` + `reports/`。
 - **batch 10⁴ 校准实验**：未跑。若跑：固定 3×10⁷ 总路径，`batch 4096 × 7500 iter`（cosine 重设）对照 `1024 × 30000`，各 2 seed。
 - **GPU**：未装 cu128。结论是 E1 不需要（overhead-bound：float32 都不比 float64 快，见实测）；A2/E4 再考虑「大 batch + float32 + 场景池 + jit」。

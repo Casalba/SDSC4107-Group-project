@@ -205,8 +205,9 @@ The claim this experiment supports is reproduction, not dominance.
 * `python -m scripts.export_policy_d1` — freezes the \(d=1\) policy into
   `src/policy/weights/heston_d1.pt` for the backtest team (B2).
 * `scripts/ci.py` runs ruff (check + format) and the unit tests; each `metrics.json` records the git
-  commit and a dirty flag. The E1 batch of 2026-11-14 was run from `c3bc2ab` with only documentation
-  files uncommitted (`src/` untouched), so its JSON carries `dirty: true`.
+  commit and a dirty flag. Both batches were rerun on 2026-11-14 from tracked trees: E1 at `c3bc2ab`
+  (only documentation files uncommitted, so its JSON carries `dirty: true`; `src/` untouched) and
+  E1d1 at `c6ef7da` (`dirty: false`).
 
 ## 9. Results
 
@@ -259,16 +260,16 @@ the \(d=1\) variant below, where the variance is missing entirely.
 ### 9.2 E1d1: Heston \(d=1\), zero cost, \(\alpha=0.5\)
 
 The \(d=1\) variant trades the underlying only: same world, features \(x_k=[\log(S_k/S_0),t_k/T]\),
-\(f=2\), no recurrence needed to represent the payoff. Five seeds, same recipe (32 min each):
+\(f=2\), no recurrence needed to represent the payoff. Five seeds, same recipe (26–32 min each):
 
 | seed | price \(p_0\) | \(\mathbb{E}[L]\) | \(\mathrm{CVaR}_{99}\) | simpler net | analytic \(\delta_1\) hedge |
 |---|---|---|---|---|---|
-| 0 | 2.5289 | 1.6923 | 8.595 | 2.5167 | 2.8363 |
-| 1 | 2.5295 | 1.6926 | 8.621 | 2.5186 | 2.8454 |
-| 2 | 2.5275 | 1.6907 | 8.433 | 2.5292 | 2.8355 |
-| 3 | 2.5430 | 1.7001 | 8.591 | 2.5215 | 2.8399 |
-| 4 | 2.5394 | 1.6985 | 8.571 | 2.5263 | 2.8344 |
-| **mean** | **2.5337** | **1.6949** | 8.56 | 2.5225 | 2.8383 |
+| 0 | 2.5291 | 1.6923 | 8.567 | 2.5163 | 2.8363 |
+| 1 | 2.5290 | 1.6923 | 8.590 | 2.5186 | 2.8454 |
+| 2 | 2.5276 | 1.6907 | 8.418 | 2.5295 | 2.8355 |
+| 3 | 2.5429 | 1.6999 | 8.586 | 2.5214 | 2.8399 |
+| 4 | 2.5402 | 1.6990 | 8.573 | 2.5261 | 2.8344 |
+| **mean** | **2.5338** | **1.6948** | 8.55 | 2.5224 | 2.8383 |
 
 Two differences from \(d=2\) are worth stating.
 
@@ -280,7 +281,7 @@ Two differences from \(d=2\) are worth stating.
   against the model \(\delta_1\). This is the paper's qualitative claim for the single-instrument
   case, reproduced — and it is the opposite of the \(d=2\) outcome, where the network merely matched
   the analytic hedge.
-* **Recurrence still does not matter** (2.5225 vs 2.5337, i.e. 0.4% and in the *favourable*
+* **Recurrence still does not matter** (2.5224 vs 2.5338, i.e. 0.4% and in the *favourable*
   direction for the simpler net, within the 3% criterion). This is the setting where the variance is
   unobserved and \(\delta_{k-1}\) could proxy for it, so the null result is informative: the position
   history adds nothing that the time-to-maturity coordinate does not already capture at this
