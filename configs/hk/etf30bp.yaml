@@ -1,0 +1,48 @@
+# HK Backtest Config: 2800.HK Tracker Fund ETF (~30bp round-trip = 15bp per side)
+# Per docs/plan.md §4.5 (v1.4) & docs/spec.md §3.1:
+#   ETF stamp duty exempt in HK since 2015-02-13 (IRD FAQ).
+#   ~30bp round-trip = commission (6-10bp) + levies (~1.7bp) + half-tick/1-tick slippage (~20bp).
+exp: hk
+kind: hk_backtest
+seeds: [0, 1, 2, 3, 4]
+device: auto
+out_root: results
+n_steps: 30
+batch: 1024
+eps: 0.0015  # 15bp per side (~30bp round-trip)
+alpha: 0.95
+
+policy:
+  name: recurrent
+  hidden: 16
+  recurrent: true
+  norm: layer
+  out_scale: 1.0
+
+market:
+  model: hk_garch
+  index: hsi
+  d: 1
+  s0: 100.0
+  k: 100.0
+  t: 0.08219178082191781  # 30 / 365
+  maturity_days: 30
+
+hk:
+  cost_tag: etf30bp
+  instrument: etf2800_total_return
+  contract_multiplier_hkd: 50
+  strike_step_pts: 100.0
+  lot_size_shares: 500
+  stamp_duty_rate: 0.0
+  round_trip_band_bps: [25.0, 40.0]
+  train_start: "2010-01-01"
+  train_end: "2018-12-31"
+  test_start: "2019-01-01"
+  test_end: "2024-12-31"
+  n_windows_total: 180
+  n_windows_train: 108
+  n_windows_test: 72
+  block_bootstrap_months: 12
+  block_bootstrap_B: 2000
+  vrp_levels: [0.0, 0.03, 0.05]
