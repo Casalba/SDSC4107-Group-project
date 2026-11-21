@@ -79,6 +79,11 @@ cd E:\cityu\sdsc4107\project
 E1 定稿数字：5 seed price **1.9431 ± 0.0007**（论文 1.94，解析 δ 对冲 1.9346），
 mean loss 1.6913 vs q 1.69183。配方怎么选出来的见 [docs/e1_diagnosis.md](docs/e1_diagnosis.md) §6。
 
+A2 scripts are grouped under [`scripts/a2/`](scripts/a2/README.md). The experiment
+overview and command index are in [`README_A2.md`](README_A2.md). E2 的 Kaggle
+clone、1M evaluation、Figure 6/7 生成及 GitHub 备份流程见
+[docs/e2_kaggle.md](docs/e2_kaggle.md)。
+
 ## 参考仓库怎么看
 
 - `refs/pfhedge/`：我们要用的库本体。看 `pfhedge/nn/modules/`（风险测度）、`pfhedge/instruments/`（HestonStock / VarianceSwap）、`examples/`（训练循环写法）。本地已装 0.23.0 于 `project/.venv`。
