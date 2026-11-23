@@ -1,0 +1,80 @@
+{
+  "2015H2 China A-Share & FX Shock": {
+    "n_months": 7,
+    "range": "2015-06..2015-12",
+    "strategies": {
+      "Bench (Delta)": {
+        "mean_loss": 2.842381706300345,
+        "max_single_month_loss": 4.059038450701522,
+        "mean_tx_cost": 0.2692843675391216
+      },
+      "M1 (Zero-Shot)": {
+        "mean_loss": 3.052510128836222,
+        "max_single_month_loss": 7.126504680375889,
+        "mean_tx_cost": 0.35504178186416524
+      },
+      "M2 (Re-fit, \u03b1=0.50)": {
+        "mean_loss": 2.9282354111825737,
+        "max_single_month_loss": 3.878369487390779,
+        "mean_tx_cost": 0.20237913079481668
+      },
+      "M2 (Re-fit, \u03b1=0.99)": {
+        "mean_loss": 3.391980328915575,
+        "max_single_month_loss": 3.9669300103593925,
+        "mean_tx_cost": 0.23668779796435133
+      }
+    }
+  },
+  "2020H1 COVID-19 Liquidity Shock": {
+    "n_months": 6,
+    "range": "2020-01..2020-06",
+    "strategies": {
+      "Bench (Delta)": {
+        "mean_loss": 3.1572082403318125,
+        "max_single_month_loss": 4.246776156857146,
+        "mean_tx_cost": 0.3365773843828013
+      },
+      "M1 (Zero-Shot)": {
+        "mean_loss": 3.06013584662676,
+        "max_single_month_loss": 7.40906346932053,
+        "mean_tx_cost": 0.48369179877841423
+      },
+      "M2 (Re-fit, \u03b1=0.50)": {
+        "mean_loss": 3.304034404160744,
+        "max_single_month_loss": 7.533946658348161,
+        "mean_tx_cost": 0.2153279065338647
+      },
+      "M2 (Re-fit, \u03b1=0.99)": {
+        "mean_loss": 2.6797729180405923,
+        "max_single_month_loss": 3.146529065716689,
+        "mean_tx_cost": 0.26716227708716356
+      }
+    }
+  },
+  "2022 HK Tech Drawdown & Rate Hikes": {
+    "n_months": 12,
+    "range": "2022-01..2022-12",
+    "strategies": {
+      "Bench (Delta)": {
+        "mean_loss": 4.021587715020934,
+        "max_single_month_loss": 7.281056620974926,
+        "mean_tx_cost": 0.3232450512438982
+      },
+      "M1 (Zero-Shot)": {
+        "mean_loss": 3.822425435573042,
+        "max_single_month_loss": 7.552790199936181,
+        "mean_tx_cost": 0.4275294670641842
+      },
+      "M2 (Re-fit, \u03b1=0.50)": {
+        "mean_loss": 3.3817396599476424,
+        "max_single_month_loss": 6.951784491639107,
+        "mean_tx_cost": 0.23495572575325577
+      },
+      "M2 (Re-fit, \u03b1=0.99)": {
+        "mean_loss": 4.237746953601434,
+        "max_single_month_loss": 7.749098390017105,
+        "mean_tx_cost": 0.2873105568382712
+      }
+    }
+  }
+}
