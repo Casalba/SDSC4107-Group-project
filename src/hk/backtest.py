@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import math
@@ -14,7 +13,6 @@ from src.policy.policy import Policy
 
 
 class DeltaHedgePolicy:
-
     def __init__(self, n_steps: int = 30, dt: float = 1.0 / 365.0) -> None:
         self.n_steps = int(n_steps)
         self.dt = float(dt)

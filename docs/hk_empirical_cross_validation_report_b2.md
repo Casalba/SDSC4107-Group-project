@@ -7,8 +7,8 @@ This report documents the empirical out-of-sample cross-validation of Deep Hedgi
 Key empirical findings:
 1. **Low-Cost Parity & Outperformance (P1 Confirmed):** On the `1 bp` HSI futures leg, locally re-fitted `M2` ($\alpha = 0.50$) achieves a 5-seed mean tail capital requirement of $C^*_{95} = 4.6550 \pm 0.1738$ and $C^*_{99} = 5.5378 \pm 0.3904$ over the full sample, outperforming `Bench` ($C^*_{95} = 5.1215$, $C^*_{99} = 6.4768$) and confirming statistical parity within the $5\%$ tolerance band (`p1_within_5pct = true`). On the 2019–2024 out-of-sample test set, `M2` ($\alpha = 0.50$) reduces $C^*_{99}$ by $-1.3368$ (95% block-bootstrap CI $[-2.2683, -0.0068]$).
 2. **Turnover Compression vs. Tail Risk under 30 bp ETF Friction (P2 Nuance):** On `2800.HK` (`30 bp` + 500-share board lots), `M2` ($\alpha = 0.50$) cuts average monthly turnover by **34.5%** ($1.4076$ vs. $2.1487$) and delivers the lowest mean hedging loss ($2.4832$ vs. $2.7139$) and highest net option-selling PnL across all Variance Risk Premium (VRP) assumptions. However, optimizing $\text{CVaR}_{0.50}$ leaves residual exposure to extreme Hong Kong jump months ($C^*_{95} = 5.7349 \pm 0.6984$ vs. `Bench` $5.2562$).
-3. **Risk-Aversion Crossover (P3 Strongly Confirmed):** Increasing the training risk-aversion parameter from $\alpha = 0.50$ to $\alpha = 0.99$ on the `30 bp` ETF leg tightens extreme tail capital requirements—reducing $C^*_{95}$ by $-0.3117$ ($5.7349 \to 5.4231$) and $C^*_{99}$ by $-0.8758$ ($7.7727 \to 6.8969$) on the full sample, and by $-0.7070$ ($6.6796 \to 5.9726$) on the 2019–2024 test set—while slashing cross-seed standard deviation by **93.8%–96.2%** and restoring statistical parity with `Bench`.
-4. **Local Re-Fitting Dominates Zero-Shot Transfer (P4 Strongly Confirmed):** Direct zero-shot transfer from the jump-free Heston model (`M1`) suffers severe degradation on Hong Kong data ($C^*_{95} = 6.7222$ on `fut1bp`, $7.0889$ on `etf30bp`) due to excessive turnover ($2.76$–$2.80$) and unmodeled overnight jump risk. Local `GARCH+Jump` re-fitting (`M2`, $\alpha = 0.99$) significantly lowers $C^*_{95}$ relative to `M1` by $-1.6232$ on `fut1bp` (95% CI $[-2.3462, -0.8445]$) and $-1.6771$ on `etf30bp` (95% CI $[-2.4996, -0.8493]$).
+3. **Risk-Aversion Tail Stabilization (P3):** Increasing the training risk-aversion parameter from $\alpha = 0.50$ to $\alpha = 0.99$ on the `30 bp` ETF leg tightens both tail capital metrics—reducing $C^*_{95}$ by $-0.3117$ ($5.7349 \to 5.4231$) and $C^*_{99}$ by $-0.8758$ ($7.7727 \to 6.8969$) on the full sample, and by $-0.7070$ ($6.6796 \to 5.9726$) on the 2019–2024 test set—while slashing cross-seed standard deviation by **93.8%–96.2%** and restoring statistical parity with `Bench`. (On low-friction `fut1bp`, $\alpha = 0.99$ is more conservative than $\alpha = 0.50$, yielding $C^*_{95} = 5.1240$ vs. $4.6550$ and closely tracking `Bench`.)
+4. **Local Re-Fitting Dominates Zero-Shot Transfer (P4 Confirmed under $\alpha = 0.99$):** Direct zero-shot transfer from the jump-free Heston model (`M1`) suffers severe degradation on Hong Kong data ($C^*_{95} = 6.7222$ on `fut1bp`, $7.0889$ on `etf30bp`) due to excessive turnover ($2.76$–$2.80$) and unmodeled overnight jump risk. Local `GARCH+Jump` re-fitting (`M2`, $\alpha = 0.99$) lowers $C^*_{95}$ relative to `M1` by $-1.6232$ on `fut1bp` (95% CI $[-2.3462, -0.8445]$) and $-1.6771$ on `etf30bp` (95% CI $[-2.4996, -0.8493]$), with 95% CIs strictly excluding zero. Under $\alpha = 0.50$, `M2` still improves mean point $C^*_{95}$ on the full sample (`etf30bp` seed 0: $-0.5677$, 95% CI $[-1.8380, +0.6013]$), though high cross-seed dispersion leaves the CI spanning zero until $\alpha$ is raised to $0.99$.
 5. **Operational Viability of Board-Lot Rounding:** Discretizing continuous neural positions into 500-share board lots of `2800.HK` induces negligible tracking distortion (mean absolute loss difference of $0.017$–$0.021$ per $S_0 = 100$ notional).
 
 ---
@@ -18,15 +18,15 @@ Key empirical findings:
 All backtests are standardized to a short 30-day ATM European Call option with normalized initial spot $S_0 = 100$ and daily discrete rebalancing ($n = 30$ steps). Terminal hedging loss $L_T$ is evaluated without upfront option premium (premiums are analyzed separately in Section 6.2 to prevent pricing-model contamination):
 
 $$
-L_T = (S_T - K)^+ - \sum_{k=0}^{n-1} \delta_k (H_{k+1} - H_k) + \varepsilon \sum_{k=0}^{n} |\delta_k - \delta_{k-1}| H_k, \quad \delta_{-1} = \delta_n = 0
+L_T = (S_T - K)^+ - \sum_{k=0}^{n-1} \delta_k (H_{k+1} - H_k) + \varepsilon \sum_{k=0}^{n-1} |\delta_k - \delta_{k-1}| H_k, \quad \delta_{-1} = 0
 $$
 
-where $H_k$ is the normalized hedging instrument path (synthetic HSI futures for `fut1bp`/`fut10bp`; dividend-adjusted `2800.HK` ETF for `etf30bp`), and $\varepsilon$ denotes the proportional one-way transaction cost rate.
+where $H_k$ is the normalized hedging instrument path (synthetic HSI futures for `fut1bp`/`fut10bp`; dividend-adjusted `2800.HK` ETF for `etf30bp`), and $\varepsilon$ denotes the proportional one-way transaction cost rate (initial position build at $k=0$ is charged; no forced liquidation at expiry, aligned with Buehler et al. eq. (5.7) and `docs/plan.md` §10.5).
 
 * **Cost Legs:**
-  * `fut1bp`: Synthetic HSI futures with $\varepsilon = 0.0001$ (1 bp round-trip equivalent friction).
-  * `fut10bp`: Stressed futures liquidity tier with $\varepsilon = 0.0010$ (10 bp).
-  * `etf30bp`: Tracker Fund (`2800.HK`) with $\varepsilon = 0.0030$ (30 bp, capturing HK stamp/levy exemptions, bid-ask spread, and market impact) plus 500-share board-lot rounding using unadjusted share prices and a HKD 50 index multiplier.
+  * `fut1bp`: Synthetic HSI futures with $\varepsilon = 0.00005$ (0.5 bp per side, ~1 bp round-trip equivalent friction).
+  * `fut10bp`: Stressed futures liquidity tier with $\varepsilon = 0.0005$ (5 bp per side, ~10 bp round-trip; evaluated for `Bench` and `M1` as an intermediate friction sensitivity check).
+  * `etf30bp`: Tracker Fund (`2800.HK`) with $\varepsilon = 0.0015$ (15 bp per side, ~30 bp round-trip, capturing HK ETF stamp-duty exemption, levies, bid-ask spread, and market impact) plus 500-share board-lot rounding using unadjusted share prices and a HKD 50 index multiplier.
 * **Strategies Evaluated:**
   * `Bench (Delta)`: Analytical Black-Scholes Call Delta computed daily using observed `^VHSI` implied volatility, 1-month HIBOR ($r_k$), and rolling `2800.HK` dividend yield ($q_k$).
   * `M1 (Zero-Shot)`: Pre-trained $d=1$ semi-recurrent network from Module A (`src/policy/weights/heston_d1.pt`) evaluated directly on HK windows without re-training.
@@ -84,8 +84,9 @@ Table 3 summarizes the formal paired moving-block bootstrap tests ($B = 2,000$, 
 | **P1 (Ensemble)** | `M2 (α=0.50)` mean series vs. `Bench` (`fut1bp`) | $-0.4801$ $[-1.2574, +0.2593]$ ($-9.37\%$) | $-1.0060$ $[-1.9216, +0.3065]$ ($-16.84\%$) | **Confirmed** ($\Delta C^*_{99}$ strictly $< 0$ on test) |
 | **P2: 30 bp Friction** | `M2 (α=0.50)` mean series vs. `Bench` (`etf30bp`) | $+0.3887$ $[-0.3700, +1.3026]$ ($+7.39\%$) | $+0.6216$ $[-0.3642, +2.4483]$ ($+10.64\%$) | **Partial** (cuts turnover $-34.5\%$ & mean loss; tail risk requires $\alpha=0.99$) |
 | **P2 (High $\alpha$)** | `M2 (α=0.99)` mean series vs. `Bench` (`etf30bp`) | $+0.1669$ $[-0.0786, +0.3297]$ ($+3.18\%$) | $+0.1232$ $[-0.1338, +0.3909]$ ($+2.11\%$) | **Parity Achieved** (within $5\%$, CI covers 0) |
-| **P3: Risk-Aversion Crossover** | `M2 (α=0.99)` minus `M2 (α=0.50)` (`etf30bp`) | $\Delta C^*_{95} = -0.3117$, $\Delta C^*_{99} = -0.8758$ | $\Delta C^*_{95} = -0.7070$, $\Delta C^*_{99} = -0.6774$ | **Strongly Confirmed** (seed std $-93.8\%$ to $-96.2\%$) |
-| **P4: Re-fit vs. Zero-Shot** | `M2 (α=0.99)` vs. `M1` (`etf30bp`, seed 0) | **$-1.6771$** $[-2.4996, -0.8493]$ ($-23.66\%$) | **$-1.5082$** $[-2.9872, -0.3509]$ ($-20.15\%$) | **Strongly Confirmed** ($p < 0.05$, CI excludes 0) |
+| **P3: Risk-Aversion Effect** | `M2 (α=0.99)` minus `M2 (α=0.50)` (`etf30bp`) | $\Delta C^*_{95} = -0.3117$, $\Delta C^*_{99} = -0.8758$ | $\Delta C^*_{95} = -0.7070$, $\Delta C^*_{99} = -0.6774$ | **Tail-Stabilizing** (both $C^*_{95}$/$C^*_{99}$ drop; seed std $-93.8\%$ to $-96.2\%$; on `fut1bp`, $\alpha=0.99$ is more conservative than $\alpha=0.50$) |
+| **P4: Re-fit vs. Zero-Shot ($\alpha=0.50$)** | `M2 (α=0.50)` vs. `M1` (`etf30bp`, seed 0) | $-0.5677$ $[-1.8380, +0.6013]$ ($-8.01\%$) | $+0.1962$ $[-1.3654, +1.8697]$ ($+2.62\%$) | **Noisy** (CI spans 0 due to high $\alpha=0.50$ seed variance) |
+| **P4: Re-fit vs. Zero-Shot ($\alpha=0.99$)** | `M2 (α=0.99)` vs. `M1` (`etf30bp`, seed 0) | **$-1.6771$** $[-2.4996, -0.8493]$ ($-23.66\%$) | **$-1.5082$** $[-2.9872, -0.3509]$ ($-20.15\%$) | **Strongly Confirmed** (95% CI excludes 0; no $p<0.05$ claim per plan §4.7) |
 
 ### Economic Mechanism: The Turnover–Tail-Risk Frontier
 
@@ -158,6 +159,14 @@ Evaluating `Bench` and `M1` on the Hang Seng China Enterprises Index (`^HSCE`, w
 | `etf30bp` | M1 (Zero-shot) | 10.0002 | 12.7521 | 3.1881 | 2.8816 | $+0.7889$ $[-0.1564, +1.6149]$ |
 
 Two takeaways stand out from `^HSCE`: (i) zero-shot `M1` exhibits the exact same significant degradation on `fut1bp` ($+23.8\%$) and `fut10bp` ($+24.8\%$); and (ii) hedging `^HSCE` options with the HSI-tracking `2800.HK` ETF introduces cross-index basis risk that inflates $C^*_{95}$ to $9.21$–$10.00$ and $C^*_{99}$ to $12.75$–$13.48$, underscoring the operational importance of basis-matched instruments in Hong Kong.
+
+### 6.4 Limitations
+
+Per `docs/plan.md` §8, four structural limitations apply to this empirical cross-validation:
+1. **Synthetic Options:** Monthly 30-day ATM European calls are constructed synthetically at the nearest 100-point strike rather than using historical HKEX option order-book quotes.
+2. **Synthetic Continuous Futures:** Historical continuous HSI futures series are unavailable in open data, so `fut1bp`/`fut10bp` use cost-of-carry synthetic futures $F_t = S_t e^{(r_t - q_t)\tau}$ without roll slippage or intraday basis dynamics.
+3. **Single-Instrument Hedging ($d = 1$):** Hong Kong lacks a liquid exchange-traded variance swap; unlike the paper's $d = 2$ Heston setup, all HK policies hedge with a single underlying instrument ($d = 1$), making the empirical study an incomplete-market extension rather than a direct $d = 2$ replication.
+4. **Metric Distinction ($C^*$ vs. $p_{\theta_0}$):** The primary HK metric $C^*_\alpha = \text{CVaR}_\alpha(L_T)$ is the zero-initial-capital requirement on historical paths without upfront premium assumptions, whereas the paper's $p_{\theta_0}$ is a model-based indifference price under the simulated risk-neutral/physical measure.
 
 ---
 

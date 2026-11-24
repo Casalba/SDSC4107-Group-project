@@ -5,7 +5,6 @@
     python -m src.hk.run_experiments --index hsce --split all --tag hsce_robustness
 """
 
-
 from __future__ import annotations
 
 import argparse
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import torch
 from scipy.stats import norm
 
 from src.common.config import load_config
@@ -29,7 +27,9 @@ from src.policy.heston_d1 import WEIGHTS as D1_WEIGHTS
 from src.policy.heston_d1 import load as load_d1_policy
 
 
-def discover_m2_checkpoints(m2_root: Path, run_group: str, seeds: list[int]) -> list[tuple[int, Path]]:
+def discover_m2_checkpoints(
+    m2_root: Path, run_group: str, seeds: list[int]
+) -> list[tuple[int, Path]]:
     found: list[tuple[int, Path]] = []
     for s in seeds:
         ckpt = m2_root / run_group / str(s) / "policy.pt"
@@ -101,17 +101,25 @@ def aggregate_multi_seed_backtests(
 def compute_premium_comparison_table(
     windows: list[HKWindow],
     strategy_losses: dict[str, np.ndarray],
-    vrp_grid: list[float] = [0.0, 0.03, 0.05],
+    vrp_grid: list[float] | None = None,
 ) -> dict[str, Any]:
+    if vrp_grid is None:
+        vrp_grid = [0.0, 0.03, 0.05]
     t_mat = 30.0 / 365.0
     sqrt_t = math.sqrt(t_mat)
     s0_norm = 100.0
 
-    def bs_norm_call_price(k_norm: np.ndarray, r0: np.ndarray, q0: np.ndarray, sig: np.ndarray) -> np.ndarray:
+    def bs_norm_call_price(
+        k_norm: np.ndarray, r0: np.ndarray, q0: np.ndarray, sig: np.ndarray
+    ) -> np.ndarray:
         sig_safe = np.maximum(sig, 1e-6)
-        d1 = (np.log(s0_norm / k_norm) + (r0 - q0 + 0.5 * sig_safe**2) * t_mat) / (sig_safe * sqrt_t)
+        d1 = (np.log(s0_norm / k_norm) + (r0 - q0 + 0.5 * sig_safe**2) * t_mat) / (
+            sig_safe * sqrt_t
+        )
         d2 = d1 - sig_safe * sqrt_t
-        return s0_norm * np.exp(-q0 * t_mat) * norm.cdf(d1) - k_norm * np.exp(-r0 * t_mat) * norm.cdf(d2)
+        return s0_norm * np.exp(-q0 * t_mat) * norm.cdf(d1) - k_norm * np.exp(
+            -r0 * t_mat
+        ) * norm.cdf(d2)
 
     k_arr = np.array([100.0 * (w.strike / w.spot[0]) for w in windows], dtype=np.float64)
     r_arr = np.array([w.r[0] for w in windows], dtype=np.float64)
@@ -192,9 +200,15 @@ def format_markdown_report(report: dict[str, Any]) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="HK Cross-Validation Master Experiment Runner (B2)")
-    parser.add_argument("--index", choices=["hsi", "hsce"], default="hsi", help="標的指數 (hsi 或 hsce)")
-    parser.add_argument("--split", choices=["all", "test", "train"], default="all", help="回測樣本區間")
+    parser = argparse.ArgumentParser(
+        description="HK Cross-Validation Master Experiment Runner (B2)"
+    )
+    parser.add_argument(
+        "--index", choices=["hsi", "hsce"], default="hsi", help="標的指數 (hsi 或 hsce)"
+    )
+    parser.add_argument(
+        "--split", choices=["all", "test", "train"], default="all", help="回測樣本區間"
+    )
     parser.add_argument("--m2-mode", choices=["garch", "garch_plain", "bootstrap"], default="garch")
     parser.add_argument("--m2-root", default="results", help="M2 訓練權重所在根目錄")
     parser.add_argument("--out-dir", default="results/hk_summary", help="彙總報表輸出目錄")
@@ -247,7 +261,9 @@ def main(argv: list[str] | None = None) -> int:
         kind_tag = str(cfg.get("kind", "hk_backtest"))
         leg_m2_root = m2_root / leg_name
         m2_a50_agg = None
-        ckpts_a50 = discover_m2_checkpoints(leg_m2_root, f"{kind_tag}_{args.index}_{args.m2_mode}_m2_a50", seeds)
+        ckpts_a50 = discover_m2_checkpoints(
+            leg_m2_root, f"{kind_tag}_{args.index}_{args.m2_mode}_m2_a50", seeds
+        )
         if ckpts_a50:
             seed_res_50 = [
                 (s, run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device))
@@ -258,7 +274,9 @@ def main(argv: list[str] | None = None) -> int:
             )
 
         m2_a99_agg = None
-        ckpts_a99 = discover_m2_checkpoints(leg_m2_root, f"{kind_tag}_{args.index}_{args.m2_mode}_m2_a99", seeds)
+        ckpts_a99 = discover_m2_checkpoints(
+            leg_m2_root, f"{kind_tag}_{args.index}_{args.m2_mode}_m2_a99", seeds
+        )
         if ckpts_a99:
             seed_res_99 = [
                 (s, run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device))
@@ -283,7 +301,6 @@ def main(argv: list[str] | None = None) -> int:
         legs_report[leg_name] = {
             "bench": {"summary": res_bench["summary"], "bootstrap": res_bench["bootstrap"]},
             "m1_zeroshot": (
-
                 {
                     "summary": res_m1["summary"],
                     "bootstrap": res_m1["bootstrap"],
@@ -304,12 +321,20 @@ def main(argv: list[str] | None = None) -> int:
         "P1_futures_1bp_parity": (
             fut["m2_refit_a50"]["paired_vs_bench_seed0"]["diff_c95"]
             if fut["m2_refit_a50"] is not None
-            else (fut["m1_zeroshot"]["paired_vs_bench"]["diff_c95"] if fut["m1_zeroshot"] else "pending")
+            else (
+                fut["m1_zeroshot"]["paired_vs_bench"]["diff_c95"]
+                if fut["m1_zeroshot"]
+                else "pending"
+            )
         ),
         "P2_etf_30bp_advantage": (
             etf["m2_refit_a50"]["paired_vs_bench_seed0"]["diff_c95"]
             if etf["m2_refit_a50"] is not None
-            else (etf["m1_zeroshot"]["paired_vs_bench"]["diff_c95"] if etf["m1_zeroshot"] else "pending")
+            else (
+                etf["m1_zeroshot"]["paired_vs_bench"]["diff_c95"]
+                if etf["m1_zeroshot"]
+                else "pending"
+            )
         ),
         "P3_risk_aversion_crossover_etf": (
             {
@@ -327,7 +352,10 @@ def main(argv: list[str] | None = None) -> int:
         ),
         "P4_refit_vs_zeroshot_etf": (
             etf["m2_refit_a50"]["paired_vs_m1_seed0"]["diff_c95"]
-            if (etf["m2_refit_a50"] is not None and etf["m2_refit_a50"]["paired_vs_m1_seed0"] is not None)
+            if (
+                etf["m2_refit_a50"] is not None
+                and etf["m2_refit_a50"]["paired_vs_m1_seed0"] is not None
+            )
             else "pending"
         ),
     }
@@ -347,7 +375,9 @@ def main(argv: list[str] | None = None) -> int:
     json_path = out_dir / f"{args.tag}_{args.index}_{args.split}.json"
     md_path = out_dir / f"{args.tag}_{args.index}_{args.split}.md"
 
-    json_path.write_text(json.dumps(full_report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(full_report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     md_text = format_markdown_report(full_report)
     md_path.write_text(md_text, encoding="utf-8")
 

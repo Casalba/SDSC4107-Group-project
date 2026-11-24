@@ -130,7 +130,12 @@ def plot_capital_comparison(
                     # Place label cleanly above error bar if small, or inside a crisp white badge if tall error bar
                     if e95 > 0.35:
                         y_pos = v95 + 0.14
-                        bbox_kw = {"facecolor": "white", "alpha": 0.8, "edgecolor": "none", "pad": 0.6}
+                        bbox_kw = {
+                            "facecolor": "white",
+                            "alpha": 0.8,
+                            "edgecolor": "none",
+                            "pad": 0.6,
+                        }
                     else:
                         y_pos = v95 + e95 + 0.12
                         bbox_kw = None
@@ -220,7 +225,14 @@ def plot_turnover_frontier(all_report: dict[str, Any], out_path: Path) -> None:
                 "",
                 xy=(t99, c99),
                 xytext=(t50, c50),
-                arrowprops={"arrowstyle": "->", "color": "#444444", "lw": 1.7, "ls": "--", "shrinkA": 7, "shrinkB": 7},
+                arrowprops={
+                    "arrowstyle": "->",
+                    "color": "#444444",
+                    "lw": 1.7,
+                    "ls": "--",
+                    "shrinkA": 7,
+                    "shrinkB": 7,
+                },
             )
 
         ax.set_title(title, pad=10)
@@ -262,8 +274,14 @@ def evaluate_and_plot_crisis_regimes(
     ckpts_50 = discover_m2_checkpoints(leg_dir, "hk_backtest_hsi_garch_m2_a50", seeds)
     ckpts_99 = discover_m2_checkpoints(leg_dir, "hk_backtest_hsi_garch_m2_a99", seeds)
 
-    res_50_list = [run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device) for _, p in ckpts_50]
-    res_99_list = [run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device) for _, p in ckpts_99]
+    res_50_list = [
+        run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device)
+        for _, p in ckpts_50
+    ]
+    res_99_list = [
+        run_hk_backtest(load_m2_policy(p, device=device), windows, cfg, device=device)
+        for _, p in ckpts_99
+    ]
 
     loss_m2_50 = np.mean([r["arrays"]["terminal_loss"] for r in res_50_list], axis=0)
     cost_m2_50 = np.mean([r["arrays"]["cost"] for r in res_50_list], axis=0)
@@ -292,7 +310,11 @@ def evaluate_and_plot_crisis_regimes(
             "M2 (Re-fit, α=0.99)": (loss_m2_99[idx], cost_m2_99[idx]),
         }
 
-        reg_stats: dict[str, Any] = {"n_months": len(idx), "range": f"{m_start}..{m_end}", "strategies": {}}
+        reg_stats: dict[str, Any] = {
+            "n_months": len(idx),
+            "range": f"{m_start}..{m_end}",
+            "strategies": {},
+        }
         for s_name, (l_arr, c_arr) in series_map.items():
             m_val = float(np.mean(l_arr))
             mx_val = float(np.max(l_arr))
@@ -324,17 +346,37 @@ def evaluate_and_plot_crisis_regimes(
     width = 0.19
     colors = ["#4A6FE3", "#D95F02", "#1B9E77", "#7570B3"]
 
-    for idx, ((s_name, m_vals), color) in enumerate(zip(mean_losses_by_strat.items(), colors, strict=False)):
+    for idx, ((s_name, m_vals), color) in enumerate(
+        zip(mean_losses_by_strat.items(), colors, strict=False)
+    ):
         offset = (idx - 1.5) * width
-        bars = axes[0].bar(x + offset, m_vals, width=width * 0.92, color=color, alpha=0.9, label=s_name)
+        bars = axes[0].bar(
+            x + offset, m_vals, width=width * 0.92, color=color, alpha=0.9, label=s_name
+        )
         for b, v in zip(bars, m_vals, strict=False):
-            axes[0].text(b.get_x() + b.get_width() / 2.0, v + 0.08, f"{v:.2f}", ha="center", va="bottom", fontsize=7.8)
+            axes[0].text(
+                b.get_x() + b.get_width() / 2.0,
+                v + 0.08,
+                f"{v:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=7.8,
+            )
 
-    for idx, ((_s_name, mx_vals), color) in enumerate(zip(max_losses_by_strat.items(), colors, strict=False)):
+    for idx, ((_s_name, mx_vals), color) in enumerate(
+        zip(max_losses_by_strat.items(), colors, strict=False)
+    ):
         offset = (idx - 1.5) * width
         bars = axes[1].bar(x + offset, mx_vals, width=width * 0.92, color=color, alpha=0.9)
         for b, v in zip(bars, mx_vals, strict=False):
-            axes[1].text(b.get_x() + b.get_width() / 2.0, v + 0.15, f"{v:.2f}", ha="center", va="bottom", fontsize=7.8)
+            axes[1].text(
+                b.get_x() + b.get_width() / 2.0,
+                v + 0.15,
+                f"{v:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=7.8,
+            )
 
     axes[0].set_title("Mean Monthly Hedging Loss During HK Crises", pad=10)
     axes[0].set_ylabel("Hedging Loss (per S₀ = 100 Notional)")
