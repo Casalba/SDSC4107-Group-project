@@ -17,7 +17,8 @@ refs/
 data/**
 !data/README.md
 !data/checksums.txt
-results/
+results/*
+!results/hk_summary/
 *.npz
 *.pt
 *.pth

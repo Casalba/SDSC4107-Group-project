@@ -73,7 +73,7 @@ figures/
 
 ## Important interpretation notes
 
-- E2CS uses the normalized call spread exactly as specified in `docs/plan_A2_next.md`. The original European-call default in `HestonWorld` is untouched.
+- E2CS uses the normalized call spread exactly as specified in `docs/A2/plan_A2_next.md`. The original European-call default in `HestonWorld` is untouched.
 - The policy is semi-recurrent. The plotted policy surfaces are conditional medians of positions observed after full paths have passed through the policy; they are not obtained by feeding an isolated `(S,V)` state with a zeroed recurrent position.
 - The E2CS model delta grid is calculated from the Heston call-price surface using central finite differences in spot and variance. It is a numerical benchmark; grid resolution and finite-difference steps are saved in source and should be sensitivity-checked before final reporting.
 - E3 reports total transaction costs and separate stock/variance-swap cost contributions. The zero-cost model price is contextual only; it is not an E3 acceptance check.

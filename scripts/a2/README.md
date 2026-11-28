@@ -49,10 +49,11 @@ them. They are different from the historical one-off probes under
 ## Common commands
 
 ```bash
-python -m scripts.a2.run_a2_seed0_batch --seed 0 --device cuda
-python -m scripts.a2.make_figures_a2 --only all
+python -m scripts.a2.run_a2_seed0_batch --seed 0 --device auto
+python -m scripts.a2.make_figures_a2 --only all --e4-data-root results
 python -m scripts.a2.run_e3 --finalize-only --run-dir results/e3/0
 ```
 
-Generated outputs belong under `results/`, selected reproducibility artifacts
-under `backups/`, and canonical report figures under `figures/`.
+Generated outputs belong under `results/`, optional off-repo reproducibility
+archives under `backups/` (not tracked in `master` per `docs/spec.md`), and
+canonical report figures under `figures/`.

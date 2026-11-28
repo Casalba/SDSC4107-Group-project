@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 
 import numpy as np
-from src.common.config import REPO_ROOT
-from src.replication.train import main
+from src.common.config import REPO_ROOT, load_config
+from src.replication.train import RUNNERS, main
 
 
 def test_debug_run_writes_all_artifacts(tmp_path) -> None:
@@ -31,3 +31,11 @@ def test_debug_run_writes_all_artifacts(tmp_path) -> None:
 
     log_text = (run / "run.log").read_text(encoding="utf-8")
     assert "exp=debug seed=0" in log_text
+
+
+def test_train_runners_cover_registered_configs() -> None:
+    expected = {"smoke", "e1", "e1d1", "e2", "e3"}
+    assert expected <= set(RUNNERS)
+    for name in ("debug", "e1", "e1d1", "e2", "e3"):
+        cfg = load_config(REPO_ROOT / "configs" / "exp" / f"{name}.yaml")
+        assert cfg["kind"] in RUNNERS

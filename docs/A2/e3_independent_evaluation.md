@@ -133,7 +133,7 @@ The E3 config enables 10,000 fixed validation paths for future training runs. Th
 ### Current scope and limitations
 
 - This correction is evaluation-only for the existing seed-0 models; model weights, architecture, features, Heston generator, optimizer, and training hyperparameters are unchanged.
-- Seeds 1–4 have completed under the frozen QE-M/current-input recipe. Their aggregate result and the final freeze decision are documented in `docs/e3_multiseed_summary.md`.
+- Seeds 1–4 have completed under the frozen QE-M/current-input recipe. Their aggregate result and the final freeze decision are documented in `docs/A2/e3_multiseed_summary.md`.
 - Numerical agreement with the paper is assessed separately from implementation fidelity and economic interpretation. The observed price gap remains a replication limitation, not a reason to alter the evaluation definition.
 
 

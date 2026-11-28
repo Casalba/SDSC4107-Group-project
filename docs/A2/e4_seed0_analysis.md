@@ -1,4 +1,4 @@
-> **Superseded for robustness conclusions:** seed 0 remains the original pilot analysis, but the frozen five-seed conclusion is now in `docs/e4_robustness_analysis.md` and `reports/e4/e4_robustness_summary.json`.
+> **Superseded for robustness conclusions:** seed 0 remains the original pilot analysis, but the frozen five-seed conclusion is now in `docs/A2/e4_robustness_analysis.md` and `reports/e4/e4_robustness_summary.json`.
 
 # E4 Seed-0 Analysis — Price Asymptotics (Figures 10–11)
 

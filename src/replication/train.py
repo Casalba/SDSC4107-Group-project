@@ -22,12 +22,18 @@ from src.common.logging import human_secs, setup_logger
 from src.common.metrics import save_pnl, write_metrics
 from src.common.seed import resolve_device, seed_everything
 from src.common.types import RunPaths
-from src.replication import e1, smoke
+from src.replication import e1, e2, e3, smoke
 
 Runner = Callable[[dict[str, Any], int, torch.device, logging.Logger], dict[str, Any]]
 
 # kind -> runner；新增环境（heston / bs）在这里注册，config 里用 kind 选择。
-RUNNERS: dict[str, Runner] = {"smoke": smoke.run, "e1": e1.run, "e1d1": e1.run}
+RUNNERS: dict[str, Runner] = {
+    "smoke": smoke.run,
+    "e1": e1.run,
+    "e1d1": e1.run,
+    "e2": e2.run,
+    "e3": e3.run,
+}
 
 
 def build_parser() -> argparse.ArgumentParser:

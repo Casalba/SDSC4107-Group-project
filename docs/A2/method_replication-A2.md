@@ -236,11 +236,11 @@ The completed E2 five-seed mean prices are 1.9432 ± 0.0007 for alpha=.50 and 2.
 6. Completed E4-BS and E4-Heston on the five-point paper epsilon grid across seeds 0–4.
 7. Retained the low-friction E4 extension as optional rather than a prerequisite for freezing the main replication.
 
-The authoritative seed registry is `docs/experiments-e2-e4.md`.
+The authoritative seed registry is `docs/A2/experiments-e2-e4.md`.
 
 ## 11. E4 five-seed asymptotic analysis and A2 figure pipeline
 
-E4 is complete for seeds 0–4 in both Black–Scholes (d=1) and Heston (d=2). Full provenance is stored in `backups/e4bs/seed_<seed>_epsilon_summary.json` and `backups/e4h/seed_<seed>_epsilon_summary.json`; the consolidated analysis is in `docs/e4_robustness_analysis.md`.
+E4 is complete for seeds 0–4 in both Black–Scholes (d=1) and Heston (d=2). Full provenance is stored in `backups/e4bs/seed_<seed>_epsilon_summary.json` and `backups/e4h/seed_<seed>_epsilon_summary.json`; the consolidated analysis is in `docs/A2/e4_robustness_analysis.md`.
 
 Across independently fitted seed-level regressions, the full-grid log-log slope is 0.7129 ± 0.0017 for Black–Scholes and 0.6469 ± 0.0173 for Heston. The theoretical continuous-time exponent is 2/3. Black–Scholes is exceptionally stable. Heston seeds 0, 1, 2 and 4 cluster near .655, while seed 3 is lower at .6160 because its small-epsilon increments remain higher. Seed 3 passes the engineering and monotonicity checks and is retained as genuine seed sensitivity.
 
@@ -261,7 +261,7 @@ The frozen QE-M/current-input E3 experiment is complete for seeds 0–4. Each se
 
 The recurrent policy is better on price, raw-loss CVaR, raw mean loss and mean transaction cost in all five seeds. The raw mean-loss difference is almost entirely a transaction-cost difference. This supports the qualitative transaction-cost mechanism but not the paper's reported magnitude: the paper price gap is 1.2309, compared with 0.0579 in the baseline.
 
-Three seed-0 fidelity controls isolate simulator and input effects. Paper inputs move both prices substantially toward the paper, while the paper-style simulator alone changes little. However, the architecture gap remains small in every arm. The five-seed baseline is retained as the formal robustness result and the controls are reported as sensitivity evidence. See `docs/e3_multiseed_summary.md` for complete results, provenance and interpretation.
+Three seed-0 fidelity controls isolate simulator and input effects. Paper inputs move both prices substantially toward the paper, while the paper-style simulator alone changes little. However, the architecture gap remains small in every arm. The five-seed baseline is retained as the formal robustness result and the controls are reported as sensitivity evidence. See `docs/A2/e3_multiseed_summary.md` for complete results, provenance and interpretation.
 
 ## 13. Final A2 freeze decision
 
@@ -273,6 +273,6 @@ Three seed-0 fidelity controls isolate simulator and input effects. Paper inputs
 | E4-BS | Strong cross-seed sublinear scaling, with fitted exponent consistently above 2/3 on the finite grid |
 | E4-Heston | Approximate two-thirds-type scaling with greater low-epsilon seed sensitivity |
 
-E2–E4 are frozen as of 2026-11-21. “Frozen” means no additional training solely to improve paper agreement. It does not convert partial numerical reproduction into a pass. Seed-level results, source commits and artifact locations are indexed in `docs/experiments-e2-e4.md`.
+E2–E4 are frozen as of 2026-11-21. “Frozen” means no additional training solely to improve paper agreement. It does not convert partial numerical reproduction into a pass. Seed-level results, source commits and artifact locations are indexed in `docs/A2/experiments-e2-e4.md`.
 
 Large pathwise `pnl.npz` arrays are intentionally excluded from Git to keep the repository practical to clone. Compact metrics, resolved configurations, logs, reports and canonical figures remain version controlled.

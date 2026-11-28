@@ -83,7 +83,7 @@ def _compact_summary(root: Path, variant: str) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--variant", choices=sorted(VARIANTS), required=True)
-    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--device", default="auto")
     parser.add_argument("--output-root", type=Path, default=Path("results/e2e3_fidelity"))
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--skip-audit", action="store_true")

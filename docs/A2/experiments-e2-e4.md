@@ -2,7 +2,7 @@
 
 > **Status:** Frozen on 2026-11-21  
 > **Scope:** A2 experiments E2–E4, corresponding to paper Figures 5–11  
-> **Ownership:** This is the A2 registry. The A1 E1/Figures 1–3 registry remains in `docs/experiments.md` and is not modified here.
+> **Ownership:** This is the A2 detailed registry. The master A1–B2 summary table is in `docs/experiments.md` (A1 E1/Figures 2–4 rows are maintained there).
 
 ## 1. Freeze rule
 
@@ -39,13 +39,13 @@ The saved `passed: false` field for E2 is expected: all five runs fail the alpha
 
 | Experiment | Archived artifacts | Consolidated interpretation |
 |---|---|---|
-| E2 | `backups/e2/<seed>/` | this registry and `docs/method_replication-A2.md` |
-| E2 call spread | `backups/e2cs_simple_seed0/`, `backups/e2cs_seeds1_4/` | `docs/e2cs_multiseed_summary.md` and `reports/e2cs/e2cs_multiseed_summary.json` |
-| E3 | `backups/e3/<seed>/` | `docs/e3_multiseed_summary.md` and `reports/e3/e3_multiseed_summary.json` |
-| Fidelity controls | `backups/e2e3_fidelity/` | `docs/e2e3_fidelity_controls.md` |
-| E4 | `backups/e4bs/`, `backups/e4h/` | `docs/e4_robustness_analysis.md` and `reports/e4/e4_robustness_summary.json` |
+| E2 | `backups/e2/<seed>/` | this registry and `docs/A2/method_replication-A2.md` |
+| E2 call spread | `backups/e2cs_simple_seed0/`, `backups/e2cs_seeds1_4/` | `docs/A2/e2cs_multiseed_summary.md` and `reports/e2cs/e2cs_multiseed_summary.json` |
+| E3 | `backups/e3/<seed>/` | `docs/A2/e3_multiseed_summary.md` and `reports/e3/e3_multiseed_summary.json` |
+| Fidelity controls | `backups/e2e3_fidelity/` | `docs/A2/e2e3_fidelity_controls.md` |
+| E4 | `backups/e4bs/`, `backups/e4h/` | `docs/A2/e4_robustness_analysis.md` and `reports/e4/e4_robustness_summary.json` |
 
-Canonical report figures are stored under `figures/`. The corresponding plotting scripts read the saved results and do not retrain models.
+Canonical report figures are stored under `figures/`. The corresponding plotting scripts read the saved results and do not retrain models. Note that `backups/` and `reports/` refer to the external A2 fork archive (not tracked in `master` per `docs/spec.md` §4 & §7).
 
 ## 5. Provenance notes
 
@@ -61,4 +61,4 @@ Large pathwise `pnl.npz` arrays are intentionally excluded from the Git reposito
 
 ## 7. Final decision
 
-E2–E4 are formally frozen. No additional GPU run is required before merging the A2 integration branch. Remaining work is documentation, pull-request review, merge-commit integration into this repository’s `main`, and later transplantation of the reviewed A2 files into a fresh clone/fork of the A1 group repository for the upstream pull request.
+E2–E4 are formally frozen and merged into `master` via PR #2 (`422a5f2`). No additional GPU run is required.

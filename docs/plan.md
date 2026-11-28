@@ -1,6 +1,6 @@
 # Deep Hedging 复现 × 港股交叉验证 · 详细方案 v1.4
 
-> 状态：**进行中**（v1.4 时点：B0 三对拍 ✅、E1 ✅（c3bc2ab）、E1-d1 ✅（c6ef7da），见 `results/b0`、`results/e1`、`results/e1d1`；E2–E4 与港股段待开工）。本文只定义范围、分工、判据，不排日期（按依赖顺序推进）。
+> 状态：**全部完成并合入 `master`**（A1/B0/E1/E1-d1 ✅、A2/E2–E4 ✅、B1 港股数据与校准 ✅、B2 港股交叉验证 ✅；总览与各模块报告索引见 [README.md](../README.md) 与 [docs/experiments.md](experiments.md)）。本文保留为范围、分工与判据的权威规范。
 > 论文：Buehler, Gonon, Teichmann, Wood, *Deep Hedging*（本地 `deephedging.pdf`，Section 5 在 `section5.txt` / `section5b.txt`）
 > 环境：pfhedge **0.23.0**（已装于 `project/.venv`，含 `HestonStock` / `VarianceSwap` / `WhalleyWilmott` / `EntropicRiskMeasure` / `ExpectedShortfall`；**没有** Heston 解析定价器）
 

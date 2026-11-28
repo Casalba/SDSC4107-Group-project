@@ -3,8 +3,8 @@
 > **Status:** Historical implementation plan; formal E2–E4 seeds 0–4 are completed and frozen  
 > **Last updated:** 2026-11-21  
 > **Scope:** E2 core, E2 call spread, E3, E4-BS, E4-Heston, and the completed fidelity diagnostics.  
-> **Current registry:** `docs/experiments-e2-e4.md`  
-> **This document does not replace** `docs/plan.md`, `docs/spec.md`, or `docs/method_replication-A2.md`. Sections describing implementation gates are retained as the record of how the completed work was organised.
+> **Current registry:** `docs/A2/experiments-e2-e4.md`  
+> **This document does not replace** `docs/plan.md`, `docs/spec.md`, or `docs/A2/method_replication-A2.md`. Sections describing implementation gates are retained as the record of how the completed work was organised.
 
 ---
 
@@ -16,8 +16,8 @@ This file records the implementation plan used for the now-completed A2 work. It
 |---|---|
 | `docs/plan.md` | Research scope, paper targets, numerical acceptance criteria, and project-level decisions |
 | `docs/spec.md` | Repository conventions, experiment IDs, result schemas, directory layout, and Git workflow |
-| `docs/method_replication-A2.md` | A2 methodology, frozen QE-M simulator, variance-swap information set, fractional CVaR, and documented deviations |
-| `docs/plan_A2_next.md` | Historical implementation sequence, code changes, tests, experiment gates, outputs, and operational rules used for A2 |
+| `docs/A2/method_replication-A2.md` | A2 methodology, frozen QE-M simulator, variance-swap information set, fractional CVaR, and documented deviations |
+| `docs/A2/plan_A2_next.md` | Historical implementation sequence, code changes, tests, experiment gates, outputs, and operational rules used for A2 |
 
 If a numerical target or scope decision appears inconsistent, `docs/plan.md` remains authoritative. If a file or directory convention appears inconsistent, follow `docs/spec.md` unless the team explicitly approves a change.
 
@@ -56,7 +56,7 @@ The formal E2 experiment is complete for seeds 0–4. Every seed used the fracti
 | Price alpha=.99 | 2.6595 ± 0.0053; below the paper-target band [3.2, 3.8] |
 | Final judgement | Frozen qualitative/partial reproduction; absolute alpha=.99 price criterion not passed |
 
-The risk-ordering checks are stable across the five archived evaluations, but E2 is not labelled as a full numerical pass. Exact seed-level results and provenance are recorded in `docs/experiments-e2-e4.md` and `backups/e2/`. No further retraining will be used solely to force the alpha=.99 price toward the paper.
+The risk-ordering checks are stable across the five archived evaluations, but E2 is not labelled as a full numerical pass. Exact seed-level results and provenance are recorded in `docs/A2/experiments-e2-e4.md` and `backups/e2/`. No further retraining will be used solely to force the alpha=.99 price toward the paper.
 
 ### 2.3 Frozen common settings for E1–E3
 
@@ -148,8 +148,8 @@ figures/fig07_e2_common_q.png
 Figure 6 should show the own-indifference-price hedging-error distributions. Figure 7 should show the common risk-neutral-price comparison. Captions must state which loss/hedging-error sign convention is plotted.
 
 After completion:
-- append the formal E2 row to `docs/experiments-e2-e4.md`;
-- update the E2 status and final numerical table in `docs/method_replication-A2.md`;
+- append the formal E2 row to `docs/A2/experiments-e2-e4.md`;
+- update the E2 status and final numerical table in `docs/A2/method_replication-A2.md`;
 - archive the run logs, configs, metrics, and `pnl.npz`;
 - do not mark E2 as passed until all numerical checks have been reviewed.
 
@@ -397,7 +397,7 @@ Final comparison table/figure:
 figures/fig05_e3_architecture_comparison.png
 ```
 
-Update `docs/experiments-e2-e4.md` and the A2 method note after the five-seed results have been reviewed.
+Update `docs/A2/experiments-e2-e4.md` and the A2 method note after the five-seed results have been reviewed.
 
 ---
 
@@ -617,7 +617,7 @@ Use PNG, 300 dpi, English axis labels and legends. Put the conclusion in the cap
 ### 9.3 Experiment registry and backups
 
 After each formal experiment is reviewed:
-- append one row to `docs/experiments-e2-e4.md`;
+- append one row to `docs/A2/experiments-e2-e4.md`;
 - include experiment ID, seed/ε/cost, exact commit, runtime, one-sentence result, and pass/partial/fail status;
 - make every figure and table traceable to a registry row;
 - back up results and checkpoints outside Git (private storage or an archived ZIP);
@@ -656,7 +656,7 @@ The integration branch is ahead of `main` and not behind it. Final integration s
 
 ## 12. Final closeout actions
 
-1. Keep the separate A2 registry in `docs/experiments-e2-e4.md`; do not modify the A1-owned `docs/experiments.md`.
+1. Keep the separate A2 registry in `docs/A2/experiments-e2-e4.md`; do not modify the A1-owned `docs/experiments.md`.
 2. Update the active pull request so that its title and body describe the complete frozen E2–E4 scope rather than pending seed-0 GPU runs.
 3. Run the repository CI on the final documentation head.
 4. Merge `exp/e2e3-fidelity-controls` into this repository's `main` with a merge commit.

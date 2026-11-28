@@ -1,4 +1,4 @@
-"""Hong Kong data pipeline deliverables (B1): ^HSI, ^HSCE, 2800.HK, ^VHSI/^HSIL, HIBOR."""
+"""Hong Kong market data, calibration, simulation, backtest, and stats (B1 & B2)."""
 
 from src.hk.data import (
     AUDIT_COLUMNS,

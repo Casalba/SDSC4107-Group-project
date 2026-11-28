@@ -15,14 +15,21 @@ This repository answers two linked questions:
 1. **Paper Replication (Part A — E1–E4):** Can semi-recurrent neural hedging policies reproduce the quantitative and qualitative findings of *Deep Hedging* Section 5 under Heston ($d=2$, stock + variance swap) and Black–Scholes ($d=1$) worlds—recovering model delta at zero cost (E1), exhibiting risk-aversion trade-offs (E2), demonstrating architecture advantages under transaction costs (E3), and obeying the $O(\varepsilon^{2/3})$ asymptotic pricing law (E4)?
 2. **Hong Kong Empirical Cross-Validation (Part B — B1 & B2):** Under realistic Hong Kong frictions—synthetic HSI futures (~1 bp round-trip) and Tracker Fund `2800.HK` ETF (~30 bp round-trip + 500-share board lots, stamp-duty exempt)—does Deep Hedging reduce the zero-initial-capital tail requirement $C^*_\alpha = \text{CVaR}_\alpha(L_T)$ relative to an analytical `^VHSI`-driven Black–Scholes Delta benchmark, and does local `GARCH(1,1)+Jump` re-fitting outperform zero-shot transfer from Heston?
 
+```mermaid
+flowchart LR
+    A1["A1: Base + B0 + E1"] --> A2["A2: E2 / E2-CS / E3 / E4"]
+    A1 -- "heston_d1.pt (M1)" --> B2["B2: HK Backtest & Stats"]
+    B1["B1: HK Data + GARCH-Jump + HKWorld"] --> B2
+```
+
 ### Module Ownership & Reports
 
 | Module | Scope | Primary Report / Docs | Status |
 |---|---|---|---|
 | **A1** | Repo skeleton, `pfhedge` adapters, B0 benchmark checks, E1 (5 seeds, Fig 2–4), frozen `d=1` transfer policy | [docs/report_a1.md](docs/report_a1.md), [docs/method_replication.md](docs/method_replication.md), [docs/b0.md](docs/b0.md) | Merged |
-| **A2** | E2 ($\alpha=0.99$), E2 Call Spread, E3 ($\varepsilon=0.01$), E4-BS & E4-Heston (5 seeds, Fig 5–11), fidelity controls | [README_A2.md](README_A2.md), [docs/A2/experiments-e2-e4.md](docs/A2/experiments-e2-e4.md), [docs/A2/method_replication-A2.md](docs/A2/method_replication-A2.md) | Merged |
+| **A2** | E2 ($\alpha=0.99$), E2 Call Spread, E3 ($\varepsilon=0.01$), E4-BS & E4-Heston (5 seeds, Fig 5–11), fidelity controls | [docs/A2/README.md](docs/A2/README.md), [docs/A2/experiments-e2-e4.md](docs/A2/experiments-e2-e4.md), [docs/A2/method_replication-A2.md](docs/A2/method_replication-A2.md) | Merged |
 | **B1** | HK data pipeline (`^HSI`, `^HSCE`, `2800.HK`, dividends, 1M HIBOR, `^VHSI`), stylized facts, `GARCH(1,1)+Jump` calibration, `HKWorld` simulator | [docs/data.md](docs/data.md) | Merged |
-| **B2** | Monthly rolling HK backtester, 500-share board-lot rounding, circular/paired block bootstrap, M1/M2 transfer & crisis/VRP/HSCE analyses | [docs/hk_empirical_cross_validation_report_b2.md](docs/hk_empirical_cross_validation_report_b2.md) | Merged |
+| **B2** | Monthly rolling HK backtester, 500-share board-lot rounding, paired moving-block bootstrap, M1/M2 transfer & crisis/VRP/HSCE analyses | [docs/hk_empirical_cross_validation_report_b2.md](docs/hk_empirical_cross_validation_report_b2.md) | Merged |
 
 ---
 
@@ -62,6 +69,14 @@ Calibrated strictly on 2010–2018 (`GARCH(1,1)+Jump`, LRT $p = 1.6 \times 10^{-
 - **P4 (Local re-fitting vs. zero-shot):** Jump-free Heston `M1` degrades severely on HK data; `M2 (α=0.99)` lowers $C^*_{95}$ vs. `M1` by `-1.68` on `etf30bp` (95% CI `[-2.50, -0.85]`).
 - **Board-lot rounding:** 500-share discretization on `2800.HK` induces negligible tracking error (`0.017–0.021` mean abs loss diff per $S_0 = 100$ notional).
 
+### Selected Figures
+
+| Part A: Paper Replication | Part B: Hong Kong Cross-Validation |
+|---|---|
+| ![E1 Loss Distribution](figures/fig02_loss_hist.png)<br>*Fig 2 (E1): Terminal loss vs. analytical Heston model hedge.* | ![HK Capital Comparison](figures/fig_hk_b2_capital_comparison.png)<br>*HK B2: $C^*_{95}$ & $C^*_{99}$ across 1 bp, 10 bp, and 30 bp tiers.* |
+| ![E2 Risk Aversion](figures/fig06_e2_own_price.png)<br>*Fig 6 (E2): $\alpha=0.50$ vs. $\alpha=0.99$ loss distributions.* | ![HK Turnover Frontier](figures/fig_hk_b2_turnover_frontier.png)<br>*HK B2: Turnover–tail-risk frontier on `fut1bp` & `etf30bp`.* |
+| ![E4 BS Asymptotics](figures/fig10_e4_bs.png)<br>*Fig 10 (E4-BS): $O(\varepsilon^{2/3})$ log–log scaling (`0.7129 ± 0.0017`).* | ![HK Crisis Regimes](figures/fig_hk_b2_crisis_regimes.png)<br>*HK B2: 2015H2, 2020H1, and 2022 crisis stress breakdown.* |
+
 ---
 
 ## Repository Structure
@@ -69,7 +84,6 @@ Calibrated strictly on 2010–2018 (`GARCH(1,1)+Jump`, LRT $p = 1.6 \times 10^{-
 ```text
 project/
 ├─ README.md                    # Project overview (this file)
-├─ README_A2.md                 # Detailed A2 progress & command index
 ├─ pyproject.toml               # pytest / ruff configuration (line-length = 100)
 ├─ requirements.lock.txt        # Pinned dependency versions
 ├─ configs/
@@ -92,7 +106,7 @@ project/
 │   └─ a2/                      # A2 experiment runners, evaluators, diagnostics, & plotters
 ├─ figures/                     # Publication-ready 300 dpi figures (Fig 2–11 + HK B1/B2)
 ├─ results/hk_summary/          # Compact HK B2 JSON/Markdown summary tables
-├─ docs/                        # plan.md, spec.md, experiments.md, module reports, paper/
+├─ docs/                        # plan.md, spec.md, experiments.md, A2/, module reports, paper/
 └─ tests/                       # Unit & integration tests (A1, A2, B1, B2)
 ```
 
@@ -138,18 +152,21 @@ Run all commands from the repository root:
 ### Part A: Paper Replication
 
 ```bash
-# A1: B0 benchmark checks, E1 (seeds 0–4), d=1 handoff policy, Figures 2–4
+# A1: B0 benchmark checks, E1 & E1-d1 (seeds 0–4), d=1 handoff policy, Figures 2–4
 python -m scripts.check_b0
 python -m src.replication.train --config configs/exp/e1.yaml --seed 0
+python -m src.replication.train --config configs/exp/e1d1.yaml --seed 0
 python -m scripts.export_policy_d1
 python -m scripts.make_figures
 
 # A2: E2, E2 Call Spread, E3, E4-BS & E4-Heston (see scripts/a2/README.md for full options)
+python -m src.replication.train --config configs/exp/e2.yaml --seed 0
 python -m scripts.a2.run_a2_seed0_batch
-python -m scripts.a2.run_e2cs
-python -m scripts.a2.run_e3
-python -m scripts.a2.run_e4_grid
-python -m scripts.a2.make_figures_a2
+python -m scripts.a2.run_e2cs --config configs/exp/e2cs.yaml --seed 0
+python -m scripts.a2.run_e3 --config configs/exp/e3.yaml --seed 0
+python -m scripts.a2.run_e4_grid --config configs/exp/e4bs.yaml --seed 0
+python -m scripts.a2.run_e4_grid --config configs/exp/e4h.yaml --seed 0
+python -m scripts.a2.make_figures_a2 --only all --e4-data-root results
 ```
 
 ### Part B: Hong Kong Empirical Cross-Validation
@@ -174,5 +191,9 @@ python -m scripts.make_hk_b2_figures
 ## Documentation Index
 
 - **Governance & Standards:** [docs/plan.md](docs/plan.md) (scientific scope & acceptance criteria) · [docs/spec.md](docs/spec.md) (interfaces, naming, DoD) · [docs/experiments.md](docs/experiments.md) (experiment registry)
-- **Part A (Replication):** [docs/report_a1.md](docs/report_a1.md) · [docs/method_replication.md](docs/method_replication.md) · [docs/e1_diagnosis.md](docs/e1_diagnosis.md) · [README_A2.md](README_A2.md) · [docs/A2/experiments-e2-e4.md](docs/A2/experiments-e2-e4.md)
+- **Part A (Replication):** [docs/report_a1.md](docs/report_a1.md) · [docs/method_replication.md](docs/method_replication.md) · [docs/e1_diagnosis.md](docs/e1_diagnosis.md) · [docs/A2/README.md](docs/A2/README.md) · [docs/A2/experiments-e2-e4.md](docs/A2/experiments-e2-e4.md)
 - **Part B (Hong Kong):** [docs/data.md](docs/data.md) · [docs/hk_empirical_cross_validation_report_b2.md](docs/hk_empirical_cross_validation_report_b2.md)
+
+## Reference
+
+- Buehler, H., Gonon, L., Teichmann, J., & Wood, B. (2019). Deep Hedging. *Quantitative Finance*, 19(8), 1271–1291.
